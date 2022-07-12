@@ -133,6 +133,7 @@ const externals = [
   'katex',
   'link-preview-generator',
   'lodash-es',
+  'use-debounce',
   ...lexicalReactModuleExternals,
   ...Object.values(wwwMappings),
 ];
