@@ -20,6 +20,9 @@ const extractErrorCodes = require('./error-codes/extract-errors');
 const alias = require('@rollup/plugin-alias');
 const compiler = require('@ampproject/rollup-plugin-closure-compiler');
 const {exec} = require('child-process-promise');
+const {terser} = require('rollup-plugin-terser');
+const postcss = require('rollup-plugin-postcss');
+const postcssurl = require('postcss-url');
 
 const license = ` * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
@@ -126,6 +129,10 @@ const externals = [
   'react',
   'yjs',
   'y-websocket',
+  '@excalidraw/excalidraw',
+  'katex',
+  'link-preview-generator',
+  'lodash-es',
   ...lexicalReactModuleExternals,
   ...Object.values(wwwMappings),
 ];
@@ -144,6 +151,16 @@ Object.keys(wwwMappings).forEach((mapping) => {
 });
 
 async function build(name, inputFile, outputPath, outputFile, isProd) {
+  const postCssOptions = {
+    plugins: [
+      postcssurl({
+        fallback: 'copy',
+        maxSize: 10,
+        url: 'inline',
+      }),
+    ],
+    to: path.join(outputPath, 'name.css'),
+  };
   const inputOptions = {
     external(modulePath, src) {
       return externals.includes(modulePath);
@@ -186,6 +203,20 @@ async function build(name, inputFile, outputPath, outputFile, isProd) {
           return source;
         },
       },
+      ...(name === 'Lexical Playground'
+        ? [
+            postcss({
+              ...postCssOptions,
+              exclude: '**/themes/PlaygroundEditorTheme.css',
+              extract: 'editor.css',
+            }),
+            postcss({
+              ...postCssOptions,
+              extract: 'theme.css',
+              include: '**/themes/PlaygroundEditorTheme.css',
+            }),
+          ]
+        : []),
       nodeResolve({
         extensions: ['.js', '.jsx', '.ts', '.tsx'],
       }),
@@ -196,6 +227,7 @@ async function build(name, inputFile, outputPath, outputFile, isProd) {
         exclude: '/**/node_modules/**',
         extensions: ['.js', '.jsx', '.ts', '.tsx'],
         plugins: [
+          '@babel/plugin-proposal-class-properties',
           [
             require('./error-codes/transform-error-messages'),
             {noMinify: !isProd},
@@ -231,7 +263,7 @@ async function build(name, inputFile, outputPath, outputFile, isProd) {
           isWWW && strictWWWMappings,
         ),
       ),
-      isProd && compiler(closureOptions),
+      isProd && terser(),
       {
         renderChunk(source) {
           return `${getComment()}
@@ -284,293 +316,14 @@ const packages = [
   {
     modules: [
       {
-        outputFileName: 'Lexical',
-        sourceFileName: 'index.ts',
+        outputFileName: 'LexicalPlayground',
+        sourceFileName: 'index1.tsx',
       },
     ],
-    name: 'Lexical Core',
-    outputPath: './packages/lexical/dist/',
-    packageName: 'lexical',
-    sourcePath: './packages/lexical/src/',
-  },
-  {
-    modules: [
-      {
-        outputFileName: 'LexicalList',
-        sourceFileName: 'index.ts',
-      },
-    ],
-    name: 'Lexical List',
-    outputPath: './packages/lexical-list/dist/',
-    packageName: 'lexical-list',
-    sourcePath: './packages/lexical-list/src/',
-  },
-  {
-    modules: [
-      {
-        outputFileName: 'LexicalTable',
-        sourceFileName: 'index.ts',
-      },
-    ],
-    name: 'Lexical Table',
-    outputPath: './packages/lexical-table/dist/',
-    packageName: 'lexical-table',
-    sourcePath: './packages/lexical-table/src/',
-  },
-  {
-    modules: [
-      {
-        outputFileName: 'LexicalFile',
-        sourceFileName: 'index.ts',
-      },
-    ],
-    name: 'Lexical File',
-    outputPath: './packages/lexical-file/dist/',
-    packageName: 'lexical-file',
-    sourcePath: './packages/lexical-file/src/',
-  },
-  {
-    modules: [
-      {
-        outputFileName: 'LexicalClipboard',
-        sourceFileName: 'index.ts',
-      },
-    ],
-    name: 'Lexical File',
-    outputPath: './packages/lexical-clipboard/dist/',
-    packageName: 'lexical-clipboard',
-    sourcePath: './packages/lexical-clipboard/src/',
-  },
-  {
-    modules: [
-      {
-        outputFileName: 'LexicalHashtag',
-        sourceFileName: 'index.ts',
-      },
-    ],
-    name: 'Lexical Hashtag',
-    outputPath: './packages/lexical-hashtag/dist/',
-    packageName: 'lexical-hashtag',
-    sourcePath: './packages/lexical-hashtag/src/',
-  },
-  {
-    modules: [
-      {
-        outputFileName: 'LexicalHistory',
-        sourceFileName: 'index.ts',
-      },
-    ],
-    name: 'Lexical History',
-    outputPath: './packages/lexical-history/dist/',
-    packageName: 'lexical-history',
-    sourcePath: './packages/lexical-history/src/',
-  },
-  {
-    modules: [
-      {
-        outputFileName: 'LexicalSelection',
-        sourceFileName: 'index.ts',
-      },
-    ],
-    name: 'Lexical Selection',
-    outputPath: './packages/lexical-selection/dist/',
-    packageName: 'lexical-selection',
-    sourcePath: './packages/lexical-selection/src/',
-  },
-  {
-    modules: [
-      {
-        outputFileName: 'LexicalText',
-        sourceFileName: 'index.ts',
-      },
-    ],
-    name: 'Lexical Text',
-    outputPath: './packages/lexical-text/dist/',
-    packageName: 'lexical-text',
-    sourcePath: './packages/lexical-text/src/',
-  },
-  {
-    modules: [
-      {
-        outputFileName: 'LexicalOffset',
-        sourceFileName: 'index.ts',
-      },
-    ],
-    name: 'Lexical Offset',
-    outputPath: './packages/lexical-offset/dist/',
-    packageName: 'lexical-offset',
-    sourcePath: './packages/lexical-offset/src/',
-  },
-  {
-    modules: [
-      {
-        outputFileName: 'LexicalUtils',
-        sourceFileName: 'index.ts',
-      },
-    ],
-    name: 'Lexical Utils',
-    outputPath: './packages/lexical-utils/dist/',
-    packageName: 'lexical-utils',
-    sourcePath: './packages/lexical-utils/src/',
-  },
-  {
-    modules: [
-      {
-        outputFileName: 'LexicalCode',
-        sourceFileName: 'index.ts',
-      },
-    ],
-    name: 'Lexical Code',
-    outputPath: './packages/lexical-code/dist/',
-    packageName: 'lexical-code',
-    sourcePath: './packages/lexical-code/src/',
-  },
-  {
-    modules: [
-      {
-        outputFileName: 'LexicalDragon',
-        sourceFileName: 'index.ts',
-      },
-    ],
-    name: 'Lexical Dragon',
-    outputPath: './packages/lexical-dragon/dist/',
-    packageName: 'lexical-dragon',
-    sourcePath: './packages/lexical-dragon/src/',
-  },
-  {
-    modules: [
-      {
-        outputFileName: 'LexicalLink',
-        sourceFileName: 'index.ts',
-      },
-    ],
-    name: 'Lexical Link',
-    outputPath: './packages/lexical-link/dist/',
-    packageName: 'lexical-link',
-    sourcePath: './packages/lexical-link/src/',
-  },
-  {
-    modules: [
-      {
-        outputFileName: 'LexicalOverflow',
-        sourceFileName: 'index.ts',
-      },
-    ],
-    name: 'Lexical Overflow',
-    outputPath: './packages/lexical-overflow/dist/',
-    packageName: 'lexical-overflow',
-    sourcePath: './packages/lexical-overflow/src/',
-  },
-  {
-    modules: [
-      {
-        outputFileName: 'LexicalPlainText',
-        sourceFileName: 'index.ts',
-      },
-    ],
-    name: 'Lexical Plain Text',
-    outputPath: './packages/lexical-plain-text/dist/',
-    packageName: 'lexical-plain-text',
-    sourcePath: './packages/lexical-plain-text/src/',
-  },
-  {
-    modules: [
-      {
-        outputFileName: 'LexicalRichText',
-        sourceFileName: 'index.ts',
-      },
-    ],
-    name: 'Lexical Rich Text',
-    outputPath: './packages/lexical-rich-text/dist/',
-    packageName: 'lexical-rich-text',
-    sourcePath: './packages/lexical-rich-text/src/',
-  },
-  {
-    modules: [
-      {
-        outputFileName: 'LexicalMarkdown',
-        sourceFileName: 'index.ts',
-      },
-    ],
-    name: 'Lexical Markdown',
-    outputPath: './packages/lexical-markdown/dist/',
-    packageName: 'lexical-markdown',
-    sourcePath: './packages/lexical-markdown/src/',
-  },
-  {
-    modules: [
-      {
-        outputFileName: 'LexicalHeadless',
-        sourceFileName: 'index.ts',
-      },
-    ],
-    name: 'Lexical Headless',
-    outputPath: './packages/lexical-headless/dist/',
-    packageName: 'lexical-headless',
-    sourcePath: './packages/lexical-headless/src/',
-  },
-  {
-    modules: [
-      {
-        outputFileName: 'LexicalHtml',
-        sourceFileName: 'index.ts',
-      },
-    ],
-    name: 'Lexical HTML',
-    outputPath: './packages/lexical-html/dist/',
-    packageName: 'lexical-html',
-    sourcePath: './packages/lexical-html/src/',
-  },
-  {
-    modules: [
-      {
-        outputFileName: 'LexicalMark',
-        sourceFileName: 'index.ts',
-      },
-    ],
-    name: 'Lexical Mark',
-    outputPath: './packages/lexical-mark/dist/',
-    packageName: 'lexical-mark',
-    sourcePath: './packages/lexical-mark/src/',
-  },
-  {
-    modules: lexicalReactModules
-      .filter((module) => {
-        // We don't want to sync these modules, as they're bundled in the other
-        // modules already.
-        const ignoredModules = [
-          'useLexicalDragonSupport',
-          'usePlainTextSetup',
-          'useRichTextSetup',
-          'useYjsCollaboration',
-        ];
-
-        return !ignoredModules.includes(module);
-      })
-      .map((module) => {
-        const basename = path.basename(path.basename(module, '.ts'), '.tsx');
-        return {
-          name: basename,
-          outputFileName: basename,
-          sourceFileName: module,
-        };
-      }),
-    name: 'Lexical React',
-    outputPath: './packages/lexical-react/dist/',
-    packageName: 'lexical-react',
-    sourcePath: './packages/lexical-react/src/',
-  },
-  {
-    modules: [
-      {
-        outputFileName: 'LexicalYjs',
-        sourceFileName: 'index.ts',
-      },
-    ],
-    name: 'Lexical Yjs',
-    outputPath: './packages/lexical-yjs/dist/',
-    packageName: 'lexical-yjs',
-    sourcePath: './packages/lexical-yjs/src/',
+    name: 'Lexical Playground',
+    outputPath: './packages/lexical-playground/dist/',
+    packageName: 'lexical-playground',
+    sourcePath: './packages/lexical-playground/src/',
   },
 ];
 

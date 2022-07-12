@@ -77,13 +77,11 @@ import {createPortal} from 'react-dom';
 import {IS_APPLE} from 'shared/environment';
 
 import useModal from '../hooks/useModal';
-import catTypingGif from '../images/cat-typing.gif';
-import yellowFlowerImage from '../images/yellow-flower.jpg';
 import {$createStickyNode} from '../nodes/StickyNode';
 import Button from '../ui/Button';
 import ColorPicker from '../ui/ColorPicker';
 import DropDown, {DropDownItem} from '../ui/DropDown';
-import FileInput from '../ui/FileInput.jsx';
+import FileInput from '../ui/FileInput';
 import KatexEquationAlterer from '../ui/KatexEquationAlterer';
 import LinkPreview from '../ui/LinkPreview';
 import TextInput from '../ui/TextInput';
@@ -368,26 +366,22 @@ function InsertImageUriDialogBody({
   );
 }
 
+export type OnImageUpload = (img: File, altText: string) => Promise<string>;
+export type InsertImagePayload1 = {altText: string; file: File};
+
 function InsertImageUploadedDialogBody({
   onClick,
 }: {
-  onClick: (payload: InsertImagePayload) => void;
+  onClick: (payload: InsertImagePayload1) => void;
 }) {
-  const [src, setSrc] = useState('');
+  const [file, setFile] = useState<File>();
   const [altText, setAltText] = useState('');
 
-  const isDisabled = src === '';
+  const isDisabled = file === undefined;
 
-  const loadImage = (files: FileList | null) => {
-    const reader = new FileReader();
-    reader.onload = function () {
-      if (typeof reader.result === 'string') {
-        setSrc(reader.result);
-      }
-      return '';
-    };
-    if (files !== null) {
-      reader.readAsDataURL(files[0]);
+  const loadImage = async (files: FileList | null) => {
+    if (files) {
+      setFile(files[0]);
     }
   };
 
@@ -410,7 +404,9 @@ function InsertImageUploadedDialogBody({
         <Button
           data-test-id="image-modal-file-upload-btn"
           disabled={isDisabled}
-          onClick={() => onClick({altText, src})}>
+          onClick={() => {
+            if (file) onClick({altText, file});
+          }}>
           Confirm
         </Button>
       </div>
@@ -421,14 +417,38 @@ function InsertImageUploadedDialogBody({
 function InsertImageDialog({
   activeEditor,
   onClose,
+  onUpload,
 }: {
   activeEditor: LexicalEditor;
   onClose: () => void;
+  onUpload?: OnImageUpload;
 }): JSX.Element {
   const [mode, setMode] = useState<null | 'url' | 'file'>(null);
 
   const onClick = (payload: InsertImagePayload) => {
     activeEditor.dispatchCommand(INSERT_IMAGE_COMMAND, payload);
+    onClose();
+  };
+
+  const onUploadClick = async ({file, altText}: InsertImagePayload1) => {
+    if (onUpload) {
+      const imgUrl = await onUpload(file, altText);
+      activeEditor.dispatchCommand(INSERT_IMAGE_COMMAND, {
+        altText,
+        src: imgUrl,
+      });
+    } else {
+      const reader = new FileReader();
+      reader.onload = function () {
+        if (typeof reader.result === 'string') {
+          activeEditor.dispatchCommand(INSERT_IMAGE_COMMAND, {
+            altText,
+            src: reader.result,
+          });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
     onClose();
   };
 
@@ -441,7 +461,7 @@ function InsertImageDialog({
             onClick={() =>
               onClick({
                 altText: 'Yellow flower in tilt shift lens',
-                src: yellowFlowerImage,
+                src: '',
               })
             }>
             Sample
@@ -459,7 +479,9 @@ function InsertImageDialog({
         </div>
       )}
       {mode === 'url' && <InsertImageUriDialogBody onClick={onClick} />}
-      {mode === 'file' && <InsertImageUploadedDialogBody onClick={onClick} />}
+      {mode === 'file' && (
+        <InsertImageUploadedDialogBody onClick={onUploadClick} />
+      )}
     </>
   );
 }
@@ -805,7 +827,13 @@ function Select({
   );
 }
 
-export default function ToolbarPlugin(): JSX.Element {
+export type ToolbarPluginProps = {
+  onUpload?: OnImageUpload;
+};
+
+export default function ToolbarPlugin({
+  onUpload,
+}: ToolbarPluginProps): JSX.Element {
   const [editor] = useLexicalComposerContext();
   const [activeEditor, setActiveEditor] = useState(editor);
   const [blockType, setBlockType] =
@@ -1253,6 +1281,7 @@ export default function ToolbarPlugin(): JSX.Element {
                   <InsertImageDialog
                     activeEditor={activeEditor}
                     onClose={onClose}
+                    onUpload={onUpload}
                   />
                 ));
               }}
@@ -1264,7 +1293,7 @@ export default function ToolbarPlugin(): JSX.Element {
               onClick={() =>
                 insertGifOnClick({
                   altText: 'Cat typing on a laptop',
-                  src: catTypingGif,
+                  src: '',
                 })
               }
               className="item">

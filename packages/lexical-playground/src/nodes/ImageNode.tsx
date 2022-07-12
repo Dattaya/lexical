@@ -6,11 +6,13 @@
  *
  */
 
+import type {ImageAlign} from '../ui/ImageResizer';
 import type {
   DOMConversionMap,
   DOMConversionOutput,
   DOMExportOutput,
   EditorConfig,
+  EditorThemeClasses,
   GridSelection,
   LexicalEditor,
   LexicalNode,
@@ -63,6 +65,7 @@ import TreeViewPlugin from '../plugins/TreeViewPlugin';
 import ContentEditable from '../ui/ContentEditable';
 import ImageResizer from '../ui/ImageResizer';
 import Placeholder from '../ui/Placeholder';
+import joinClasses from '../utils/join-classes';
 
 export interface ImagePayload {
   altText: string;
@@ -73,6 +76,7 @@ export interface ImagePayload {
   showCaption?: boolean;
   src: string;
   width?: number;
+  align?: ImageAlign;
 }
 
 const imageCache = new Set();
@@ -143,6 +147,7 @@ function ImageComponent({
   resizable,
   showCaption,
   caption,
+  align,
 }: {
   altText: string;
   caption: LexicalEditor;
@@ -153,6 +158,7 @@ function ImageComponent({
   showCaption: boolean;
   src: string;
   width: 'inherit' | number;
+  align?: ImageAlign;
 }): JSX.Element {
   const ref = useRef(null);
   const [isSelected, setSelected, clearSelection] =
@@ -232,6 +238,15 @@ function ImageComponent({
       const node = $getNodeByKey(nodeKey);
       if ($isImageNode(node)) {
         node.setShowCaption(true);
+      }
+    });
+  };
+
+  const setAlign = (newAlign?: ImageAlign) => {
+    editor.update(() => {
+      const node = $getNodeByKey(nodeKey);
+      if ($isImageNode(node)) {
+        node.setAlign(newAlign);
       }
     });
   };
@@ -319,6 +334,8 @@ function ImageComponent({
           <ImageResizer
             showCaption={showCaption}
             setShowCaption={setShowCaption}
+            align={align}
+            setAlign={setAlign}
             editor={editor}
             imageRef={ref}
             maxWidth={maxWidth}
@@ -342,9 +359,19 @@ export type SerializedImageNode = Spread<
     width?: number;
     type: 'image';
     version: 1;
+    align?: ImageAlign;
   },
   SerializedLexicalNode
 >;
+
+const genClassName = (theme: EditorThemeClasses, align?: ImageAlign) => {
+  return joinClasses(
+    theme.image,
+    align === 'left' && theme.imageAlign.left,
+    align === 'center' && theme.imageAlign.center,
+    align === 'right' && theme.imageAlign.right,
+  );
+};
 
 export class ImageNode extends DecoratorNode<JSX.Element> {
   __src: string;
@@ -354,6 +381,7 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
   __maxWidth: number;
   __showCaption: boolean;
   __caption: LexicalEditor;
+  __align?: ImageAlign;
 
   static getType(): string {
     return 'image';
@@ -369,6 +397,7 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
       node.__showCaption,
       node.__caption,
       node.__key,
+      node.__align,
     );
   }
 
@@ -391,8 +420,10 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     return node;
   }
 
-  exportDOM(): DOMExportOutput {
+  exportDOM(editor: LexicalEditor): DOMExportOutput {
+    const className = genClassName(editor._config.theme, this.__align);
     const element = document.createElement('img');
+    element.className = className;
     element.setAttribute('src', this.__src);
     element.setAttribute('alt', this.__altText);
     return {element};
@@ -416,6 +447,7 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     showCaption?: boolean,
     caption?: LexicalEditor,
     key?: NodeKey,
+    align?: ImageAlign,
   ) {
     super(key);
     this.__src = src;
@@ -425,10 +457,12 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     this.__height = height || 'inherit';
     this.__showCaption = showCaption || false;
     this.__caption = caption || createEditor();
+    this.__align = align;
   }
 
   exportJSON(): SerializedImageNode {
     return {
+      align: this.__align,
       altText: this.getAltText(),
       caption: this.__caption.toJSON(),
       height: this.__height === 'inherit' ? 0 : this.__height,
@@ -455,20 +489,25 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     writable.__showCaption = showCaption;
   }
 
+  setAlign(align?: ImageAlign): void {
+    const writable = this.getWritable();
+    writable.__align = align;
+  }
+
   // View
 
   createDOM(config: EditorConfig): HTMLElement {
     const span = document.createElement('span');
     const theme = config.theme;
-    const className = theme.image;
+    const className = genClassName(theme, this.__align);
     if (className !== undefined) {
       span.className = className;
     }
     return span;
   }
 
-  updateDOM(): false {
-    return false;
+  updateDOM(prevNode: ImageNode): boolean {
+    return this.__align !== prevNode.__align;
   }
 
   getSrc(): string {
@@ -490,6 +529,7 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
         nodeKey={this.getKey()}
         showCaption={this.__showCaption}
         caption={this.__caption}
+        align={this.__align}
         resizable={true}
       />
     );
@@ -505,6 +545,7 @@ export function $createImageNode({
   showCaption,
   caption,
   key,
+  align,
 }: ImagePayload): ImageNode {
   return new ImageNode(
     src,
@@ -515,6 +556,7 @@ export function $createImageNode({
     showCaption,
     caption,
     key,
+    align,
   );
 }
 

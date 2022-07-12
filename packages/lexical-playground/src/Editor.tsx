@@ -6,6 +6,8 @@
  *
  */
 
+import type {EditorState, LexicalEditor} from 'lexical';
+import {$generateHtmlFromNodes} from '@lexical/html';
 import {AutoFocusPlugin} from '@lexical/react/LexicalAutoFocusPlugin';
 import {AutoScrollPlugin} from '@lexical/react/LexicalAutoScrollPlugin';
 import {CharacterLimitPlugin} from '@lexical/react/LexicalCharacterLimitPlugin';
@@ -16,6 +18,7 @@ import {HashtagPlugin} from '@lexical/react/LexicalHashtagPlugin';
 import {HistoryPlugin} from '@lexical/react/LexicalHistoryPlugin';
 import {LinkPlugin} from '@lexical/react/LexicalLinkPlugin';
 import {ListPlugin} from '@lexical/react/LexicalListPlugin';
+import {OnChangePlugin} from '@lexical/react/LexicalOnChangePlugin';
 import {PlainTextPlugin} from '@lexical/react/LexicalPlainTextPlugin';
 import {RichTextPlugin} from '@lexical/react/LexicalRichTextPlugin';
 import {TablePlugin} from '@lexical/react/LexicalTablePlugin';
@@ -48,7 +51,7 @@ import TabFocusPlugin from './plugins/TabFocusPlugin';
 import TableCellActionMenuPlugin from './plugins/TableActionMenuPlugin';
 import TableCellResizer from './plugins/TableCellResizer';
 import TextFormatFloatingToolbarPlugin from './plugins/TextFormatFloatingToolbarPlugin';
-import ToolbarPlugin from './plugins/ToolbarPlugin';
+import ToolbarPlugin, {ToolbarPluginProps} from './plugins/ToolbarPlugin';
 import TreeViewPlugin from './plugins/TreeViewPlugin';
 import TwitterPlugin from './plugins/TwitterPlugin';
 import YouTubePlugin from './plugins/YouTubePlugin';
@@ -59,19 +62,35 @@ const skipCollaborationInit =
   // @ts-ignore
   window.parent != null && window.parent.frames.right === window;
 
-export default function Editor(): JSX.Element {
+export type EditorProps = {
+  isCollab?: boolean;
+  isAutocomplete?: boolean;
+  isMaxLength?: boolean;
+  isCharLimit?: boolean;
+  isCharLimitUtf8?: boolean;
+  isRichText?: boolean;
+  showTreeView?: boolean;
+  onChange?: (
+    htmlJson: string,
+    editorState: EditorState,
+    editor: LexicalEditor,
+  ) => void;
+  onChangeMode?: 'html' | 'json';
+} & Pick<ToolbarPluginProps, 'onUpload'>;
+
+export default function Editor({
+  isCollab,
+  isAutocomplete,
+  isMaxLength,
+  isCharLimit,
+  isCharLimitUtf8,
+  isRichText = false,
+  showTreeView,
+  onChange,
+  onChangeMode = 'json',
+  onUpload,
+}: EditorProps): JSX.Element {
   const {historyState} = useSharedHistoryContext();
-  const {
-    settings: {
-      isCollab,
-      isAutocomplete,
-      isMaxLength,
-      isCharLimit,
-      isCharLimitUtf8,
-      isRichText,
-      showTreeView,
-    },
-  } = useSettings();
   const text = isCollab
     ? 'Enter some collaborative rich text...'
     : isRichText
@@ -81,8 +100,8 @@ export default function Editor(): JSX.Element {
   const scrollRef = useRef(null);
 
   return (
-    <>
-      {isRichText && <ToolbarPlugin />}
+    <div className="editor-shell">
+      {isRichText && <ToolbarPlugin onUpload={onUpload} />}
       <div
         className={`editor-container ${showTreeView ? 'tree-view' : ''} ${
           !isRichText ? 'plain-text' : ''
@@ -98,9 +117,23 @@ export default function Editor(): JSX.Element {
         <SpeechToTextPlugin />
         <AutoLinkPlugin />
         <AutoScrollPlugin scrollRef={scrollRef} />
-        <CommentPlugin
-          providerFactory={isCollab ? createWebsocketProvider : undefined}
-        />
+        {onChange && (
+          <OnChangePlugin
+            onChange={(editorState, editor) => {
+              if (onChangeMode === 'html') {
+                editor.update(() => {
+                  onChange(
+                    $generateHtmlFromNodes(editor, null),
+                    editorState,
+                    editor,
+                  );
+                });
+              } else if (onChangeMode === 'json') {
+                onChange(JSON.stringify(editorState), editorState, editor);
+              }
+            }}
+          />
+        )}
         {isRichText ? (
           <>
             {isCollab ? (
@@ -157,6 +190,6 @@ export default function Editor(): JSX.Element {
         <ActionsPlugin isRichText={isRichText} />
       </div>
       {showTreeView && <TreeViewPlugin />}
-    </>
+    </div>
   );
 }

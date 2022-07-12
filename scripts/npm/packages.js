@@ -11,30 +11,7 @@
 'use strict';
 
 const LEXICAL_PKG = 'lexical';
-const DEFAULT_PKGS = [
-  'lexical-react',
-  'lexical-yjs',
-  'lexical-list',
-  'lexical-table',
-  'lexical-file',
-  'lexical-clipboard',
-  'lexical-hashtag',
-  'lexical-headless',
-  'lexical-html',
-  'lexical-history',
-  'lexical-selection',
-  'lexical-offset',
-  'lexical-code',
-  'lexical-plain-text',
-  'lexical-rich-text',
-  'lexical-utils',
-  'lexical-dragon',
-  'lexical-overflow',
-  'lexical-link',
-  'lexical-text',
-  'lexical-markdown',
-  'lexical-mark',
-];
+const DEFAULT_PKGS = ['lexical-playground'];
 const SHARED_PKG = 'shared';
 
 module.exports = {

@@ -1,7 +1,9 @@
 {
-  "name": "lexical-playground",
+  "name": "@ohs/lexical-playground",
+  "description": "A temporary packaged fork of Lexical's official playground.",
   "version": "0.3.7",
-  "private": true,
+  "main": "LexicalPlayground.js",
+  "types": "src/index1.d.ts",
   "scripts": {
     "dev": "vite --host",
     "build-dev": "vite build",
@@ -29,15 +31,30 @@
     "lexical": "0.3.7",
     "link-preview-generator": "1.0.7",
     "lodash-es": "^4.17.21",
-    "react": "^18.0.0-alpha-64931821a-20210808",
-    "react-dom": "^18.0.0-alpha-64931821a-20210808",
     "y-websocket": ">=1.3.x",
     "yjs": ">=13.5.22"
   },
+  "peerDependencies": {
+    "react": ">=17.x",
+    "react-dom": ">=17.x"
+  },
   "devDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "@types/lodash-es": "^4.14.182",
     "@vitejs/plugin-react": "^1.0.7",
     "vite": "^2.8.0",
     "vite-plugin-replace": "0.1.1"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dattaya/lexical/tree/lexical-playground",
+    "directory": "packages/lexical-playground"
+  },
+  "files": [
+    "LexicalPlayground*",
+    "*.css",
+    "src",
+    "fonts"
+  ]
 }
