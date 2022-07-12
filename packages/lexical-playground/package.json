@@ -1,6 +1,14 @@
 {
   "name": "@ohs/lexical-playground",
   "description": "A temporary packaged fork of Lexical's official playground.",
+  "license": "MIT",
+  "keywords": [
+    "react",
+    "lexical",
+    "editor",
+    "contenteditable",
+    "rich-text"
+  ],
   "version": "0.3.7",
   "main": "LexicalPlayground.js",
   "types": "src/index1.d.ts",
