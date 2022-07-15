@@ -9,7 +9,7 @@
     "contenteditable",
     "rich-text"
   ],
-  "version": "0.3.7-2",
+  "version": "0.3.7-3",
   "main": "LexicalPlayground.js",
   "types": "src/index1.d.ts",
   "scripts": {
