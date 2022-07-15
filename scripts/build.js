@@ -132,7 +132,7 @@ const externals = [
   '@excalidraw/excalidraw',
   'katex',
   'link-preview-generator',
-  'lodash-es',
+  'lodash',
   'use-debounce',
   ...lexicalReactModuleExternals,
   ...Object.values(wwwMappings),

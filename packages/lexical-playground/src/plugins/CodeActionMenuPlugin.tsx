@@ -15,7 +15,7 @@ import {
   $getSelection,
   $setSelection,
 } from 'lexical';
-import {debounce} from 'lodash-es';
+import {debounce} from 'lodash';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import * as React from 'react';
 import {createPortal} from 'react-dom';
