@@ -11,9 +11,16 @@ import {
 import useLayoutEffect from 'shared/useLayoutEffect';
 import {useDebounce} from 'use-debounce';
 
-const useSyncWithInputHtml = (html?: string | null) => {
+type Options = {
+  timeoutMs?: number;
+};
+
+const useSyncWithInputHtml = (
+  html?: string | null,
+  {timeoutMs = 800}: Options = {},
+) => {
   const [editor] = useLexicalComposerContext();
-  const [debHtml] = useDebounce(html, 800);
+  const [debHtml] = useDebounce(html, timeoutMs);
   const normHtml = editor.getEditorState().isEmpty() ? html : debHtml;
 
   useLayoutEffect(() => {

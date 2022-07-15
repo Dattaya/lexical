@@ -14,9 +14,16 @@ const stringifyJsonState = (json?: JsonState): string | undefined | null => {
   return json;
 };
 
-const useSyncWithInputJson = (json?: JsonState) => {
+type Options = {
+  timeoutMs?: number;
+};
+
+const useSyncWithInputJson = (
+  json?: JsonState,
+  {timeoutMs = 800}: Options = {},
+) => {
   const [editor] = useLexicalComposerContext();
-  const [debJson] = useDebounce(json, 800);
+  const [debJson] = useDebounce(json, timeoutMs);
   const normJson = editor.getEditorState().isEmpty() ? json : debJson;
 
   useLayoutEffect(() => {
