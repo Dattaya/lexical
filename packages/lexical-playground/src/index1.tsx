@@ -3,13 +3,13 @@ import './index.css';
 
 import Editor from './Editor';
 import EditorComposer from './EditorComposer';
+import useSyncWithInputHtml from './hooks/useSyncWithInputHtml';
+import useSyncWithInputJson from './hooks/useSyncWithInputJson';
 import PlaygroundNodes from './nodes/PlaygroundNodes';
 import PasteLogPlugin from './plugins/PasteLogPlugin';
 import TestRecorderPlugin from './plugins/TestRecorderPlugin';
 import TypingPerfPlugin from './plugins/TypingPerfPlugin';
 import PlaygroundEditorTheme from './themes/PlaygroundEditorTheme';
-import useSyncWithInputHtml from './useSyncWithInputHtml';
-import useSyncWithInputJson from './useSyncWithInputJson';
 
 export {SharedAutocompleteContext} from './context/SharedAutocompleteContext';
 export {SharedHistoryContext} from './context/SharedHistoryContext';
