@@ -457,16 +457,6 @@ function InsertImageDialog({
       {!mode && (
         <div className="ToolbarPlugin__dialogButtonsList">
           <Button
-            data-test-id="image-modal-option-sample"
-            onClick={() =>
-              onClick({
-                altText: 'Yellow flower in tilt shift lens',
-                src: '',
-              })
-            }>
-            Sample
-          </Button>
-          <Button
             data-test-id="image-modal-option-url"
             onClick={() => setMode('url')}>
             URL
@@ -1055,9 +1045,6 @@ export default function ToolbarPlugin({
     },
     [activeEditor, selectedElementKey],
   );
-  const insertGifOnClick = (payload: InsertImagePayload) => {
-    activeEditor.dispatchCommand(INSERT_IMAGE_COMMAND, payload);
-  };
 
   return (
     <div className="toolbar">
@@ -1288,17 +1275,6 @@ export default function ToolbarPlugin({
               className="item">
               <i className="icon image" />
               <span className="text">Image</span>
-            </DropDownItem>
-            <DropDownItem
-              onClick={() =>
-                insertGifOnClick({
-                  altText: 'Cat typing on a laptop',
-                  src: '',
-                })
-              }
-              className="item">
-              <i className="icon gif" />
-              <span className="text">GIF</span>
             </DropDownItem>
             <DropDownItem
               onClick={() => {
