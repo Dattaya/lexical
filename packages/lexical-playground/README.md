@@ -7,7 +7,7 @@ A temporary packaged fork of Lexical's official playground until someone creates
 
 ```tsx
 import { Editor, EditorComposer, useSyncWithInputHtml } from '@ohs/lexical-playground';
-import '@ohs/lexical-playground/theme.css';
+import '@ohs/lexical-playground/theme.css'; // or import your own theme styles
 import '@ohs/lexical-playground/editor.css';
 
 function MyEditor({ html, setHtml }: {
@@ -35,7 +35,7 @@ export default function PlaygroundApp(): JSX.Element {
 
 ```tsx
 import { Editor, EditorComposer, useSyncWithInputJson } from '@ohs/lexical-playground';
-import '@ohs/lexical-playground/theme.css';
+import '@ohs/lexical-playground/theme.css'; // or import your own theme styles
 import '@ohs/lexical-playground/editor.css';
 
 function MyEditor({ json, setJson }: {
@@ -99,7 +99,7 @@ export default function PlaygroundApp(): JSX.Element {
 The only thing that's needed to display HTML that lexical generated is to import `theme.css`.
 
 ```tsx
-import '@ohs/lexical-playground/theme.css';
+import '@ohs/lexical-playground/theme.css'; // or import your own theme styles
 
 export default function PlaygroundApp({ html }: { html: string }): JSX.Element {
   return (
