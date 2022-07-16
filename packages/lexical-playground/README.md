@@ -107,3 +107,23 @@ export default function PlaygroundApp({ html }: { html: string }): JSX.Element {
   );
 }
 ```
+
+### SSR
+At this point the editor does not support SSR and needs to be loaded on the client.
+#### Next.js
+```tsx
+import type { NextPage } from 'next'
+import dynamic from 'next/dynamic'
+
+const MyEditor = dynamic(() => import('./path-to-my-editor-that-loads-lexical-playground'), {
+  ssr: false,
+})
+
+const MyPage: NextPage = () => {
+  return (
+    <MyEditor />
+  )
+}
+
+export default MyPage
+```
