@@ -11,7 +11,6 @@
   ],
   "version": "0.3.7-3",
   "main": "LexicalPlayground.js",
-  "types": "src/index1.d.ts",
   "scripts": {
     "dev": "vite --host",
     "build-dev": "vite build",
@@ -59,11 +58,5 @@
     "type": "git",
     "url": "https://github.com/Dattaya/lexical/tree/lexical-playground",
     "directory": "packages/lexical-playground"
-  },
-  "files": [
-    "LexicalPlayground*",
-    "*.css",
-    "src",
-    "fonts"
-  ]
+  }
 }

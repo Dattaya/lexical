@@ -7,9 +7,10 @@ import PlaygroundEditorTheme from './themes/PlaygroundEditorTheme';
 
 export type EditorComposerProps = {
   children: React.ComponentProps<typeof LexicalComposer>['children'];
-} & Partial<
-  Pick<React.ComponentProps<typeof LexicalComposer>, 'initialConfig'>
->;
+  initialConfig?: Partial<
+    React.ComponentProps<typeof LexicalComposer>['initialConfig']
+  >;
+};
 
 export default function EditorComposer({
   children,
@@ -18,12 +19,12 @@ export default function EditorComposer({
   const config = {
     editorState: undefined,
     namespace: 'Playground',
-    nodes: [...PlaygroundNodes],
     onError: (error: Error) => {
       throw error;
     },
     theme: PlaygroundEditorTheme,
     ...initialConfig,
+    nodes: [...PlaygroundNodes, ...(initialConfig?.nodes ?? [])],
   };
   return <LexicalComposer initialConfig={config}>{children}</LexicalComposer>;
 }

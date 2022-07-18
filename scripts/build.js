@@ -83,6 +83,10 @@ const lexicalReactModules = fs
       !str.includes('test-utils'),
   );
 
+const lexicalPlaygroundExtensions = fs.readdirSync(
+  path.resolve('./packages/lexical-playground/src/ext'),
+);
+
 const lexicalReactModuleExternals = lexicalReactModules.map((module) => {
   const basename = path.basename(path.basename(module, '.ts'), '.tsx');
   const external = `@lexical/react/${basename}`;
@@ -134,6 +138,7 @@ const externals = [
   'link-preview-generator',
   'lodash',
   'use-debounce',
+  '@ohs/lexical-playground/commands',
   ...lexicalReactModuleExternals,
   ...Object.values(wwwMappings),
 ];
@@ -204,7 +209,15 @@ async function build(name, inputFile, outputPath, outputFile, isProd) {
           return source;
         },
       },
-      ...(name === 'Lexical Playground'
+      ...(outputFile.includes('/ext/')
+        ? [
+            postcss({
+              ...postCssOptions,
+              extract: `${path.basename(inputFile)}.css`,
+            }),
+          ]
+        : []),
+      ...(outputFile.includes('LexicalPlayground')
         ? [
             postcss({
               ...postCssOptions,
@@ -318,8 +331,23 @@ const packages = [
     modules: [
       {
         outputFileName: 'LexicalPlayground',
-        sourceFileName: 'index1.tsx',
+        sourceFileName: 'index.tsx',
       },
+      {
+        name: 'commands',
+        outputFileName: 'index',
+        sourceFileName: 'index.ts',
+        subPath: '/commands',
+      },
+      ...lexicalPlaygroundExtensions.map((module) => {
+        const basename = path.basename(path.basename(module, '.ts'), '.tsx');
+        return {
+          name: basename,
+          outputFileName: basename,
+          sourceFileName: basename,
+          subPath: '/ext',
+        };
+      }),
     ],
     name: 'Lexical Playground',
     outputPath: './packages/lexical-playground/dist/',
@@ -333,7 +361,7 @@ async function buildTSDeclarationFiles(packageName, outputPath) {
 }
 
 async function moveTSDeclarationFilesIntoDist(packageName, outputPath) {
-  await exec(`cp -R ./.ts-temp/${packageName}/src/ ${outputPath}`);
+  await fs.copy(`./.ts-temp/${packageName}/src`, outputPath);
 }
 
 function buildForkModule(outputPath, outputFileName) {
@@ -345,7 +373,7 @@ function buildForkModule(outputPath, outputFileName) {
   ];
   const fileContent = lines.join('\n');
   fs.outputFileSync(
-    path.resolve(path.join(`${outputPath}${outputFileName}.js`)),
+    path.resolve(path.join(outputPath, `${outputFileName}.js`)),
     fileContent,
   );
 }
@@ -360,16 +388,16 @@ async function buildAll() {
 
     for (const module of modules) {
       const {sourceFileName, outputFileName} = module;
-      let inputFile = path.resolve(path.join(`${sourcePath}${sourceFileName}`));
-
+      let inputFile = path.resolve(
+        path.join(sourcePath, module.subPath ?? '', sourceFileName),
+      );
+      const normOutputPath = path.join(outputPath, module.subPath ?? '');
       await build(
         `${name}${module.name ? '-' + module.name : ''}`,
         inputFile,
-        outputPath,
+        normOutputPath,
         path.resolve(
-          path.join(
-            `${outputPath}${getFileName(outputFileName, isProduction)}`,
-          ),
+          path.join(normOutputPath, getFileName(outputFileName, isProduction)),
         ),
         isProduction,
       );
@@ -378,13 +406,13 @@ async function buildAll() {
         await build(
           name,
           inputFile,
-          outputPath,
+          normOutputPath,
           path.resolve(
-            path.join(`${outputPath}${getFileName(outputFileName, false)}`),
+            path.join(normOutputPath, getFileName(outputFileName, false)),
           ),
           false,
         );
-        buildForkModule(outputPath, outputFileName);
+        buildForkModule(normOutputPath, outputFileName);
       }
     }
 

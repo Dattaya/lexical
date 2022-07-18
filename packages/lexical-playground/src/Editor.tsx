@@ -37,7 +37,6 @@ import CodeHighlightPlugin from './plugins/CodeHighlightPlugin';
 import CommentPlugin from './plugins/CommentPlugin';
 import EmojisPlugin from './plugins/EmojisPlugin';
 import EquationsPlugin from './plugins/EquationsPlugin';
-import ExcalidrawPlugin from './plugins/ExcalidrawPlugin';
 import HorizontalRulePlugin from './plugins/HorizontalRulePlugin';
 import ImagesPlugin from './plugins/ImagesPlugin';
 import KeywordsPlugin from './plugins/KeywordsPlugin';
@@ -169,7 +168,6 @@ export default function Editor({
             <HorizontalRulePlugin />
             <TextFormatFloatingToolbarPlugin />
             <EquationsPlugin />
-            <ExcalidrawPlugin />
             <TabFocusPlugin />
           </>
         ) : (

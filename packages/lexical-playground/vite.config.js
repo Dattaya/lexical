@@ -107,6 +107,10 @@ const moduleResolution = [
     find: 'shared',
     replacement: path.resolve('../shared/src'),
   },
+  {
+    find: '@ohs/lexical-playground/commands',
+    replacement: path.resolve('./src/commands/index.ts'),
+  },
 ];
 // Lexical React
 [
@@ -152,7 +156,7 @@ const moduleResolution = [
       replacement: resolvedPath,
     });
   }
-}); 
+});
 
 // https://vitejs.dev/config/
 export default defineConfig({

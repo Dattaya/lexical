@@ -8,7 +8,7 @@ import {
   EditorProps,
   SerializedEditorState,
   useSyncWithInputJson,
-} from './index1';
+} from './index';
 
 function App({
   json,

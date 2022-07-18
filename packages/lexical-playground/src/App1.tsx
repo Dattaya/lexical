@@ -2,7 +2,7 @@
 import * as React from 'react';
 import {useState} from 'react';
 
-import {Editor, EditorComposer, useSyncWithInputHtml} from './index1';
+import {Editor, EditorComposer, useSyncWithInputHtml} from './index';
 
 const uploadImg = async (file: File, altText: string) => {
   return `https://placehold.co/300x300?text=${altText}`;
