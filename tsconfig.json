@@ -105,6 +105,9 @@
       "@lexical/react/LexicalRichTextPlugin": [
         "./packages/lexical-react/src/LexicalRichTextPlugin.tsx"
       ],
+      "@lexical/react/LexicalTypeaheadMenuPlugin": [
+        "packages/lexical-react/src/LexicalTypeaheadMenuPlugin.tsx"
+      ],
       "@lexical/react/LexicalHistoryPlugin": [
         "./packages/lexical-react/src/LexicalHistoryPlugin.ts"
       ],
@@ -119,6 +122,9 @@
       ],
       "@lexical/react/LexicalAutoFocusPlugin": [
         "./packages/lexical-react/src/LexicalAutoFocusPlugin.ts"
+      ],
+      "@lexical/react/LexicalTableOfContents__EXPERIMENTAL": [
+        "./packages/lexical-react/src/LexicalTableOfContents__EXPERIMENTAL.tsx"
       ],
       "@lexical/react/LexicalAutoFormatterPlugin": [
         "./packages/lexical-react/src/LexicalAutoFormatterPlugin.ts"

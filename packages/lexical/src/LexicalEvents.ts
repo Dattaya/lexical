@@ -69,6 +69,7 @@ import {
   DOM_ELEMENT_TYPE,
   DOM_TEXT_TYPE,
   DOUBLE_LINE_BREAK,
+  IS_ALL_FORMATTING,
 } from './LexicalConstants';
 import {internalCreateRangeSelection, RangeSelection} from './LexicalSelection';
 import {updateEditor} from './LexicalUpdates';
@@ -255,16 +256,18 @@ function onSelectionChange(
           }
         }
       } else {
-        const focus = selection.focus;
-        const focusNode = focus.getNode();
-        let combinedFormat = 0;
+        let combinedFormat = IS_ALL_FORMATTING;
 
-        if (anchor.type === 'text') {
-          combinedFormat |= anchorNode.getFormat();
-        }
-
-        if (focus.type === 'text' && !anchorNode.is(focusNode)) {
-          combinedFormat |= focusNode.getFormat();
+        const nodes = selection.getNodes();
+        const nodesLength = nodes.length;
+        for (let i = 0; i < nodesLength; i++) {
+          const node = nodes[i];
+          if ($isTextNode(node)) {
+            combinedFormat &= node.getFormat();
+            if (combinedFormat === 0) {
+              break;
+            }
+          }
         }
 
         selection.format = combinedFormat;
@@ -374,52 +377,6 @@ function onBeforeInput(event: InputEvent, editor: LexicalEditor): void {
   ) {
     return;
   } else if (inputType === 'insertCompositionText') {
-    // This logic handles insertion of text between different
-    // format text types. We have to detect a change in type
-    // during composition and see if the previous text contains
-    // part of the composed text to work out the actual text that
-    // we need to insert.
-    const composedText = event.data;
-
-    // TODO: evaluate if this is Android only. It doesn't always seem
-    // to have any real impact, so could probably be refactored or removed
-    // for an alternative approach.
-    if (composedText) {
-      updateEditor(editor, () => {
-        const selection = $getSelection();
-
-        if ($isRangeSelection(selection)) {
-          const anchor = selection.anchor;
-          const node = anchor.getNode();
-          const prevNode = node.getPreviousSibling();
-
-          if (
-            anchor.offset === 0 &&
-            $isTextNode(node) &&
-            $isTextNode(prevNode) &&
-            node.getTextContent() === COMPOSITION_START_CHAR &&
-            prevNode.getFormat() !== selection.format
-          ) {
-            const prevTextContent = prevNode.getTextContent();
-
-            if (composedText.indexOf(prevTextContent) === 0) {
-              const insertedText = composedText.slice(prevTextContent.length);
-              dispatchCommand(
-                editor,
-                CONTROLLED_TEXT_INSERTION_COMMAND,
-                insertedText,
-              );
-              setTimeout(() => {
-                updateEditor(editor, () => {
-                  node.select();
-                });
-              }, ANDROID_COMPOSITION_LATENCY);
-            }
-          }
-        }
-      });
-    }
-
     return;
   }
 

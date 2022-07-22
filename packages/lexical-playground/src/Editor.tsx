@@ -35,6 +35,7 @@ import ClickableLinkPlugin from './plugins/ClickableLinkPlugin';
 import CodeActionMenuPlugin from './plugins/CodeActionMenuPlugin';
 import CodeHighlightPlugin from './plugins/CodeHighlightPlugin';
 import CommentPlugin from './plugins/CommentPlugin';
+import ComponentPickerPlugin from './plugins/ComponentPickerPlugin';
 import EmojisPlugin from './plugins/EmojisPlugin';
 import EquationsPlugin from './plugins/EquationsPlugin';
 import HorizontalRulePlugin from './plugins/HorizontalRulePlugin';
@@ -49,6 +50,7 @@ import SpeechToTextPlugin from './plugins/SpeechToTextPlugin';
 import TabFocusPlugin from './plugins/TabFocusPlugin';
 import TableCellActionMenuPlugin from './plugins/TableActionMenuPlugin';
 import TableCellResizer from './plugins/TableCellResizer';
+import TableOfContentsPlugin from './plugins/TableOfContentsPlugin';
 import TextFormatFloatingToolbarPlugin from './plugins/TextFormatFloatingToolbarPlugin';
 import ToolbarPlugin, {ToolbarPluginProps} from './plugins/ToolbarPlugin';
 import TreeViewPlugin from './plugins/TreeViewPlugin';
@@ -69,6 +71,7 @@ export type EditorProps = {
   isCharLimitUtf8?: boolean;
   isRichText?: boolean;
   showTreeView?: boolean;
+  showTableOfContents?: boolean;
   onChange?: (
     htmlJson: string,
     editorState: EditorState,
@@ -85,6 +88,7 @@ export default function Editor({
   isCharLimitUtf8,
   isRichText = false,
   showTreeView,
+  showTableOfContents,
   onChange,
   onChangeMode = 'json',
   onUpload,
@@ -109,6 +113,7 @@ export default function Editor({
         {isMaxLength && <MaxLengthPlugin maxLength={30} />}
         <AutoFocusPlugin />
         <ClearEditorPlugin />
+        <ComponentPickerPlugin />
         <MentionsPlugin />
         <EmojisPlugin />
         <HashtagPlugin />
@@ -186,6 +191,9 @@ export default function Editor({
         )}
         {isAutocomplete && <AutocompletePlugin />}
         <ActionsPlugin isRichText={isRichText} />
+        <div className="toc">
+          {showTableOfContents && <TableOfContentsPlugin />}
+        </div>
       </div>
       {showTreeView && <TreeViewPlugin />}
     </div>

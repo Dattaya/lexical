@@ -16,7 +16,12 @@ import type {
 
 import './ToolbarPlugin.css';
 
-import {$createCodeNode, $isCodeNode} from '@lexical/code';
+import {
+  $createCodeNode,
+  $isCodeNode,
+  CODE_LANGUAGE_FRIENDLY_NAME_MAP,
+  CODE_LANGUAGE_MAP,
+} from '@lexical/code';
 import {$isLinkNode, TOGGLE_LINK_COMMAND} from '@lexical/link';
 import {
   $isListNode,
@@ -51,6 +56,7 @@ import {
 } from '@lexical/utils';
 import {
   $createParagraphNode,
+  $createTextNode,
   $getNodeByKey,
   $getRoot,
   $getSelection,
@@ -85,6 +91,8 @@ import {IS_APPLE} from 'shared/environment';
 
 import useModal from '../hooks/useModal';
 import {$createStickyNode} from '../nodes/StickyNode';
+import {$isTweetNode} from '../nodes/TweetNode';
+import {$isYouTubeNode} from '../nodes/YouTubeNode';
 import Button from '../ui/Button';
 import ColorPicker from '../ui/ColorPicker';
 import DropDown, {DropDownItem} from '../ui/DropDown';
@@ -114,30 +122,19 @@ const blockTypeToBlockName = {
   quote: 'Quote',
 };
 
-const CODE_LANGUAGE_OPTIONS: [string, string][] = [
-  ['', '- Select language -'],
-  ['c', 'C'],
-  ['clike', 'C-like'],
-  ['css', 'CSS'],
-  ['html', 'HTML'],
-  ['js', 'JavaScript'],
-  ['markdown', 'Markdown'],
-  ['objc', 'Objective-C'],
-  ['plain', 'Plain Text'],
-  ['py', 'Python'],
-  ['rust', 'Rust'],
-  ['sql', 'SQL'],
-  ['swift', 'Swift'],
-  ['xml', 'XML'],
-];
+function getCodeLanguageOptions(): [string, string][] {
+  const options: [string, string][] = [['', '- Select language -']];
 
-const CODE_LANGUAGE_MAP = {
-  javascript: 'js',
-  md: 'markdown',
-  plaintext: 'plain',
-  python: 'py',
-  text: 'plain',
-};
+  for (const [lang, friendlyName] of Object.entries(
+    CODE_LANGUAGE_FRIENDLY_NAME_MAP,
+  )) {
+    options.push([lang, friendlyName]);
+  }
+
+  return options;
+}
+
+const CODE_LANGUAGE_OPTIONS = getCodeLanguageOptions();
 
 function getSelectedNode(selection: RangeSelection): TextNode | ElementNode {
   const anchor = selection.anchor;
@@ -335,7 +332,7 @@ function FloatingLinkEditor({editor}: {editor: LexicalEditor}): JSX.Element {
   );
 }
 
-function InsertImageUriDialogBody({
+export function InsertImageUriDialogBody({
   onClick,
 }: {
   onClick: (payload: InsertImagePayload) => void;
@@ -376,7 +373,7 @@ function InsertImageUriDialogBody({
 export type OnImageUpload = (img: File, altText: string) => Promise<string>;
 export type InsertImagePayload1 = {altText: string; file: File};
 
-function InsertImageUploadedDialogBody({
+export function InsertImageUploadedDialogBody({
   onClick,
 }: {
   onClick: (payload: InsertImagePayload1) => void;
@@ -421,7 +418,7 @@ function InsertImageUploadedDialogBody({
   );
 }
 
-function InsertImageDialog({
+export function InsertImageDialog({
   activeEditor,
   onClose,
   onUpload,
@@ -483,7 +480,7 @@ function InsertImageDialog({
   );
 }
 
-function InsertTableDialog({
+export function InsertTableDialog({
   activeEditor,
   onClose,
 }: {
@@ -511,7 +508,7 @@ function InsertTableDialog({
   );
 }
 
-function InsertPollDialog({
+export function InsertPollDialog({
   activeEditor,
   onClose,
 }: {
@@ -539,7 +536,7 @@ function InsertPollDialog({
 
 const VALID_TWITTER_URL = /twitter.com\/[0-9a-zA-Z]{1,20}\/status\/([0-9]*)/g;
 
-function InsertTweetDialog({
+export function InsertTweetDialog({
   activeEditor,
   onClose,
 }: {
@@ -623,7 +620,7 @@ function InsertYouTubeDialog({
   );
 }
 
-function InsertEquationDialog({
+export function InsertEquationDialog({
   activeEditor,
   onClose,
 }: {
@@ -724,6 +721,23 @@ function BlockFormatDropDown({
           if (selection.isCollapsed()) {
             $wrapLeafNodesInElements(selection, () => $createCodeNode());
           } else {
+            selection.getNodes().forEach((node) => {
+              // Explicity set fallback text content for some decorators nodes.
+              if ($isTweetNode(node)) {
+                node.replace(
+                  $createTextNode(
+                    `https://twitter.com/i/web/status/${node.getId()}`,
+                  ),
+                );
+              } else if ($isYouTubeNode(node)) {
+                node.replace(
+                  $createTextNode(
+                    `https://www.youtube.com/watch?v=${node.getId()}`,
+                  ),
+                );
+              }
+            });
+
             const textContent = selection.getTextContent();
             const codeNode = $createCodeNode();
             selection.insertNodes([codeNode]);
