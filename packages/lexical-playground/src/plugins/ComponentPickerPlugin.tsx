@@ -22,6 +22,7 @@ import {
 import {$createHeadingNode, $createQuoteNode} from '@lexical/rich-text';
 import {$wrapLeafNodesInElements} from '@lexical/selection';
 import {INSERT_TABLE_COMMAND} from '@lexical/table';
+import {INSERT_EXCALIDRAW_COMMAND} from '@ohs/lexical-playground/commands';
 import {
   $createParagraphNode,
   $getSelection,
@@ -34,8 +35,6 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
 import useModal from '../hooks/useModal';
-import catTypingGif from '../images/cat-typing.gif';
-import {INSERT_EXCALIDRAW_COMMAND} from '@ohs/lexical-playground/commands';
 import {INSERT_IMAGE_COMMAND} from './ImagesPlugin';
 import {
   InsertEquationDialog,
@@ -293,7 +292,7 @@ export default function ComponentPickerMenuPlugin(): JSX.Element {
         onSelect: () =>
           editor.dispatchCommand(INSERT_IMAGE_COMMAND, {
             altText: 'Cat typing on a laptop',
-            src: catTypingGif,
+            src: '',
           }),
       }),
       new ComponentPickerOption('Image', {
