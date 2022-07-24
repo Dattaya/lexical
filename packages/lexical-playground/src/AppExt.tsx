@@ -1,8 +1,8 @@
 /* eslint-disable header/header */
 import * as React from 'react';
 
-import {Editor, EditorComposer} from './index';
 import {excalidrawExt} from './ext/excalidraw';
+import {Editor, EditorComposer} from './index';
 
 function App(): JSX.Element {
   return <Editor isRichText={true} />;
