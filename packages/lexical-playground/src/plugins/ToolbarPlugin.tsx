@@ -78,14 +78,7 @@ import {
   UNDO_COMMAND,
 } from 'lexical';
 import * as React from 'react';
-import {
-  ChangeEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import {ChangeEvent, useCallback, useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {IS_APPLE} from 'shared/environment';
 
@@ -101,11 +94,11 @@ import KatexEquationAlterer from '../ui/KatexEquationAlterer';
 import LinkPreview from '../ui/LinkPreview';
 import TextInput from '../ui/TextInput';
 import {INSERT_EQUATION_COMMAND} from './EquationsPlugin';
-import {INSERT_EXCALIDRAW_COMMAND} from '@ohs/lexical-playground/commands';
 import {INSERT_IMAGE_COMMAND} from './ImagesPlugin';
 import {INSERT_POLL_COMMAND} from './PollPlugin';
 import {INSERT_TWEET_COMMAND} from './TwitterPlugin';
 import {INSERT_YOUTUBE_COMMAND} from './YouTubePlugin';
+import {useEditorComposerContext} from '../EditorComposerContext';
 
 const blockTypeToBlockName = {
   bullet: 'Bulleted List',
@@ -870,12 +863,7 @@ export default function ToolbarPlugin({
   const [isRTL, setIsRTL] = useState(false);
   const [codeLanguage, setCodeLanguage] = useState<string>('');
 
-  const activeNodes: Record<string, boolean> = useMemo(() => {
-    return Array.from(editor._nodes.keys()).reduce((acc, val) => {
-      acc[val] = true;
-      return acc;
-    }, {} as Record<string, boolean>);
-  }, [editor._nodes]);
+  const editorContext = useEditorComposerContext();
 
   const updateToolbar = useCallback(() => {
     const selection = $getSelection();
@@ -1304,19 +1292,6 @@ export default function ToolbarPlugin({
               <i className="icon image" />
               <span className="text">Image</span>
             </DropDownItem>
-            {activeNodes.excalidraw && (
-              <DropDownItem
-                onClick={() => {
-                  activeEditor.dispatchCommand(
-                    INSERT_EXCALIDRAW_COMMAND,
-                    undefined,
-                  );
-                }}
-                className="item">
-                <i className="icon diagram-2" />
-                <span className="text">Excalidraw</span>
-              </DropDownItem>
-            )}
             <DropDownItem
               onClick={() => {
                 showModal('Insert Table', (onClose) => (
@@ -1394,6 +1369,15 @@ export default function ToolbarPlugin({
               <i className="icon sticky" />
               <span className="text">Sticky Note</span>
             </DropDownItem>
+            {editorContext.extensions.toolbarInsertsAfter.map(
+              (DropDownItem, i) => (
+                <DropDownItem
+                  key={i}
+                  showModal={showModal}
+                  activeEditor={activeEditor}
+                />
+              ),
+            )}
           </DropDown>
         </>
       )}

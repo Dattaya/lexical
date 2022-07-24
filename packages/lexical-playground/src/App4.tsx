@@ -2,20 +2,17 @@
 import * as React from 'react';
 
 import {Editor, EditorComposer} from './index';
-import {ExcalidrawNode, ExcalidrawPlugin} from './ext/excalidraw';
+import {excalidrawExt} from './ext/excalidraw';
 
 function App(): JSX.Element {
-  return (
-    <>
-      <ExcalidrawPlugin />
-      <Editor isRichText={true} />
-    </>
-  );
+  return <Editor isRichText={true} />;
 }
+
+const extensions = [excalidrawExt];
 
 export default function PlaygroundApp4(): JSX.Element {
   return (
-    <EditorComposer initialConfig={{nodes: [ExcalidrawNode]}}>
+    <EditorComposer extensions={extensions}>
       <App />
     </EditorComposer>
   );

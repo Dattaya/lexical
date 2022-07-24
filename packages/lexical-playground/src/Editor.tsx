@@ -26,7 +26,6 @@ import * as React from 'react';
 import {useRef} from 'react';
 
 import {createWebsocketProvider} from './collaboration';
-import {useSettings} from './context/SettingsContext';
 import {useSharedHistoryContext} from './context/SharedHistoryContext';
 import ActionsPlugin from './plugins/ActionsPlugin';
 import AutocompletePlugin from './plugins/AutocompletePlugin';
@@ -34,7 +33,6 @@ import AutoLinkPlugin from './plugins/AutoLinkPlugin';
 import ClickableLinkPlugin from './plugins/ClickableLinkPlugin';
 import CodeActionMenuPlugin from './plugins/CodeActionMenuPlugin';
 import CodeHighlightPlugin from './plugins/CodeHighlightPlugin';
-import CommentPlugin from './plugins/CommentPlugin';
 import ComponentPickerPlugin from './plugins/ComponentPickerPlugin';
 import EmojisPlugin from './plugins/EmojisPlugin';
 import EquationsPlugin from './plugins/EquationsPlugin';
@@ -58,6 +56,7 @@ import TwitterPlugin from './plugins/TwitterPlugin';
 import YouTubePlugin from './plugins/YouTubePlugin';
 import ContentEditable from './ui/ContentEditable';
 import Placeholder from './ui/Placeholder';
+import {useEditorComposerContext} from './EditorComposerContext';
 
 const skipCollaborationInit =
   // @ts-ignore
@@ -101,6 +100,7 @@ export default function Editor({
     : 'Enter some plain text...';
   const placeholder = <Placeholder>{text}</Placeholder>;
   const scrollRef = useRef(null);
+  const editorContext = useEditorComposerContext();
 
   return (
     <div className="editor-shell">
@@ -174,6 +174,9 @@ export default function Editor({
             <TextFormatFloatingToolbarPlugin />
             <EquationsPlugin />
             <TabFocusPlugin />
+            {editorContext.extensions.plugins.map((Plugin, i) => (
+              <Plugin key={i} />
+            ))}
           </>
         ) : (
           <>

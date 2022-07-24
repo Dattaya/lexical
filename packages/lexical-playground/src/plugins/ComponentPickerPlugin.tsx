@@ -22,7 +22,7 @@ import {
 import {$createHeadingNode, $createQuoteNode} from '@lexical/rich-text';
 import {$wrapLeafNodesInElements} from '@lexical/selection';
 import {INSERT_TABLE_COMMAND} from '@lexical/table';
-import {INSERT_EXCALIDRAW_COMMAND} from '@ohs/lexical-playground/commands';
+import {INSERT_EXCALIDRAW_COMMAND} from './ExcalidrawPlugin';
 import {
   $createParagraphNode,
   $getSelection,

@@ -10,7 +10,16 @@ import {MarkdownShortcutPlugin} from '@lexical/react/LexicalMarkdownShortcutPlug
 import * as React from 'react';
 
 import {PLAYGROUND_TRANSFORMERS} from './MarkdownTransformers';
+import {useEditorComposerContext} from '../EditorComposerContext';
 
 export default function MarkdownPlugin(): JSX.Element {
-  return <MarkdownShortcutPlugin transformers={PLAYGROUND_TRANSFORMERS} />;
+  const editorContext = useEditorComposerContext();
+  return (
+    <MarkdownShortcutPlugin
+      transformers={[
+        ...PLAYGROUND_TRANSFORMERS,
+        ...editorContext.extensions.transformers,
+      ]}
+    />
+  );
 }

@@ -185,10 +185,7 @@
       "shared/invariant": ["./packages/shared/src/invariant.ts"],
       "shared/warnOnlyOnce": ["./packages/shared/src/warnOnlyOnce.ts"],
       "shared/environment": ["./packages/shared/src/environment.ts"],
-      "shared/useLayoutEffect": ["./packages/shared/src/useLayoutEffect.ts"],
-      "@ohs/lexical-playground/commands": [
-        "packages/lexical-playground/src/commands/index.ts"
-      ]
+      "shared/useLayoutEffect": ["./packages/shared/src/useLayoutEffect.ts"]
     }
   },
   "include": ["./libdefs", "./packages/lexical-playground"],

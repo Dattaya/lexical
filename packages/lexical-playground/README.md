@@ -133,21 +133,20 @@ Some plugins like `excalidraw` are optional, and need to be manually activated:
 
 ```tsx
 // ...
-import { ExcalidrawNode, ExcalidrawPlugin } from '@ohs/lexical-playground/ext/excalidraw';
+import {excalidrawExt} from '@ohs/lexical-playground/ext/excalidraw';
 import '@ohs/lexical-playground/ext/excalidraw.css';
 
 function MyEditor(): JSX.Element {
   return (
-    <>
-      <ExcalidrawPlugin />
-      <Editor isRichText={true} />
-    </>
+    <Editor isRichText={true} />
   );
 }
 
+const extensions = [excalidrawExt];
+
 export default function PlaygroundApp(): JSX.Element {
   return (
-    <EditorComposer initialConfig={{ nodes: [ExcalidrawNode] }}>
+    <EditorComposer extensions={extensions}>
       <App />
     </EditorComposer>
   );

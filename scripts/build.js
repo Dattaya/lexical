@@ -18,7 +18,6 @@ const commonjs = require('@rollup/plugin-commonjs');
 const replace = require('@rollup/plugin-replace');
 const extractErrorCodes = require('./error-codes/extract-errors');
 const alias = require('@rollup/plugin-alias');
-const compiler = require('@ampproject/rollup-plugin-closure-compiler');
 const {exec} = require('child-process-promise');
 const {terser} = require('rollup-plugin-terser');
 const postcss = require('rollup-plugin-postcss');
@@ -33,19 +32,6 @@ const isProduction = argv.prod;
 const isRelease = argv.release;
 const isWWW = argv.www;
 const extractCodes = argv.codes;
-
-const closureOptions = {
-  apply_input_source_maps: false,
-  assume_function_wrapper: true,
-  compilation_level: 'SIMPLE',
-  inject_libraries: false,
-  language_in: 'ECMASCRIPT_2019',
-  language_out: 'ECMASCRIPT_2019',
-  process_common_js_modules: false,
-  rewrite_polyfills: false,
-  use_types_for_optimization: false,
-  warning_level: 'QUIET',
-};
 
 const wwwMappings = {
   '@lexical/clipboard': 'LexicalClipboard',
@@ -138,7 +124,6 @@ const externals = [
   'link-preview-generator',
   'lodash',
   'use-debounce',
-  '@ohs/lexical-playground/commands',
   ...lexicalReactModuleExternals,
   ...Object.values(wwwMappings),
 ];
@@ -332,12 +317,6 @@ const packages = [
       {
         outputFileName: 'LexicalPlayground',
         sourceFileName: 'index.tsx',
-      },
-      {
-        name: 'commands',
-        outputFileName: 'index',
-        sourceFileName: 'index.ts',
-        subPath: '/commands',
       },
       ...lexicalPlaygroundExtensions.map((module) => {
         const basename = path.basename(path.basename(module, '.ts'), '.tsx');
