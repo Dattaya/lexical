@@ -7,6 +7,7 @@
  */
 
 import type {EditorState, LexicalEditor} from 'lexical';
+import type {ToolbarConfig} from './plugins/toolbarTypes';
 
 import {$generateHtmlFromNodes} from '@lexical/html';
 import {AutoFocusPlugin} from '@lexical/react/LexicalAutoFocusPlugin';
@@ -24,7 +25,7 @@ import {PlainTextPlugin} from '@lexical/react/LexicalPlainTextPlugin';
 import {RichTextPlugin} from '@lexical/react/LexicalRichTextPlugin';
 import {TablePlugin} from '@lexical/react/LexicalTablePlugin';
 import * as React from 'react';
-import {useRef} from 'react';
+import {useMemo, useRef} from 'react';
 
 import {createWebsocketProvider} from './collaboration';
 import {useSharedHistoryContext} from './context/SharedHistoryContext';
@@ -77,7 +78,23 @@ export type EditorProps = {
     editor: LexicalEditor,
   ) => void;
   onChangeMode?: 'html' | 'json';
+  toolbarConfig?: ToolbarConfig;
 } & Pick<ToolbarPluginProps, 'onUpload'>;
+
+const defaultToolbarConfig: ToolbarConfig = {
+  align: true,
+  bgColorPicker: true,
+  biu: true,
+  codeBlock: true,
+  fontFamilyOptions: true,
+  fontSizeOptions: true,
+  formatBlockOptions: true,
+  formatTextOptions: true,
+  insertOptions: true,
+  link: true,
+  textColorPicker: true,
+  undoRedo: true,
+};
 
 export default function Editor({
   isCollab,
@@ -91,6 +108,7 @@ export default function Editor({
   onChange,
   onChangeMode = 'json',
   onUpload,
+  toolbarConfig,
 }: EditorProps): JSX.Element {
   const {historyState} = useSharedHistoryContext();
   const text = isCollab
@@ -102,9 +120,16 @@ export default function Editor({
   const scrollRef = useRef(null);
   const editorContext = useEditorComposerContext();
 
+  const normToolbarConfig = useMemo(
+    () => ({...defaultToolbarConfig, ...toolbarConfig}),
+    [toolbarConfig],
+  );
+
   return (
     <div className="editor-shell">
-      {isRichText && <ToolbarPlugin onUpload={onUpload} />}
+      {isRichText && (
+        <ToolbarPlugin config={normToolbarConfig} onUpload={onUpload} />
+      )}
       <div
         className={`editor-container ${showTreeView ? 'tree-view' : ''} ${
           !isRichText ? 'plain-text' : ''
@@ -170,7 +195,7 @@ export default function Editor({
             <YouTubePlugin />
             <ClickableLinkPlugin />
             <HorizontalRulePlugin />
-            <TextFormatFloatingToolbarPlugin />
+            <TextFormatFloatingToolbarPlugin config={normToolbarConfig} />
             <EquationsPlugin />
             <TabFocusPlugin />
             {editorContext.extensions.plugins.map((Plugin, i) => (

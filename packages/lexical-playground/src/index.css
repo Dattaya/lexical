@@ -1366,6 +1366,18 @@ button.action-button:disabled {
   margin: 0 4px;
 }
 
+.toolbar .divider:last-child {
+  display: none;
+}
+
+.toolbar .divider:first-child {
+  display: none;
+}
+
+.toolbar .divider + .divider {
+  display: none;
+}
+
 .sticky-note-container {
   position: absolute;
   z-index: 9;

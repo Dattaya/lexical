@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
+import type {ToolbarConfig} from './toolbarTypes';
 
 import {$isCodeHighlightNode} from '@lexical/code';
 import {$isLinkNode, TOGGLE_LINK_COMMAND} from '@lexical/link';
@@ -67,6 +68,7 @@ function TextFormatFloatingToolbar({
   isStrikethrough,
   isSubscript,
   isSuperscript,
+  config,
 }: {
   editor: LexicalEditor;
   isBold: boolean;
@@ -77,6 +79,7 @@ function TextFormatFloatingToolbar({
   isSubscript: boolean;
   isSuperscript: boolean;
   isUnderline: boolean;
+  config: ToolbarConfig;
 }): JSX.Element {
   const popupCharStylesEditorRef = useRef<HTMLDivElement | null>(null);
 
@@ -165,70 +168,82 @@ function TextFormatFloatingToolbar({
 
   return (
     <div ref={popupCharStylesEditorRef} className="floating-text-format-popup">
-      <button
-        onClick={() => {
-          editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
-        }}
-        className={'popup-item spaced ' + (isBold ? 'active' : '')}
-        aria-label="Format text as bold">
-        <i className="format bold" />
-      </button>
-      <button
-        onClick={() => {
-          editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic');
-        }}
-        className={'popup-item spaced ' + (isItalic ? 'active' : '')}
-        aria-label="Format text as italics">
-        <i className="format italic" />
-      </button>
-      <button
-        onClick={() => {
-          editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline');
-        }}
-        className={'popup-item spaced ' + (isUnderline ? 'active' : '')}
-        aria-label="Format text to underlined">
-        <i className="format underline" />
-      </button>
-      <button
-        onClick={() => {
-          editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough');
-        }}
-        className={'popup-item spaced ' + (isStrikethrough ? 'active' : '')}
-        aria-label="Format text with a strikethrough">
-        <i className="format strikethrough" />
-      </button>
-      <button
-        onClick={() => {
-          editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'subscript');
-        }}
-        className={'popup-item spaced ' + (isSubscript ? 'active' : '')}
-        title="Subscript"
-        aria-label="Format Subscript">
-        <i className="format subscript" />
-      </button>
-      <button
-        onClick={() => {
-          editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'superscript');
-        }}
-        className={'popup-item spaced ' + (isSuperscript ? 'active' : '')}
-        title="Superscript"
-        aria-label="Format Superscript">
-        <i className="format superscript" />
-      </button>
-      <button
-        onClick={() => {
-          editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code');
-        }}
-        className={'popup-item spaced ' + (isCode ? 'active' : '')}
-        aria-label="Insert code block">
-        <i className="format code" />
-      </button>
-      <button
-        onClick={insertLink}
-        className={'popup-item spaced ' + (isLink ? 'active' : '')}
-        aria-label="Insert link">
-        <i className="format link" />
-      </button>
+      {config.biu && (
+        <>
+          <button
+            onClick={() => {
+              editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
+            }}
+            className={'popup-item spaced ' + (isBold ? 'active' : '')}
+            aria-label="Format text as bold">
+            <i className="format bold" />
+          </button>
+          <button
+            onClick={() => {
+              editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic');
+            }}
+            className={'popup-item spaced ' + (isItalic ? 'active' : '')}
+            aria-label="Format text as italics">
+            <i className="format italic" />
+          </button>
+          <button
+            onClick={() => {
+              editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline');
+            }}
+            className={'popup-item spaced ' + (isUnderline ? 'active' : '')}
+            aria-label="Format text to underlined">
+            <i className="format underline" />
+          </button>
+        </>
+      )}
+      {config.formatTextOptions && (
+        <>
+          <button
+            onClick={() => {
+              editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough');
+            }}
+            className={'popup-item spaced ' + (isStrikethrough ? 'active' : '')}
+            aria-label="Format text with a strikethrough">
+            <i className="format strikethrough" />
+          </button>
+          <button
+            onClick={() => {
+              editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'subscript');
+            }}
+            className={'popup-item spaced ' + (isSubscript ? 'active' : '')}
+            title="Subscript"
+            aria-label="Format Subscript">
+            <i className="format subscript" />
+          </button>
+          <button
+            onClick={() => {
+              editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'superscript');
+            }}
+            className={'popup-item spaced ' + (isSuperscript ? 'active' : '')}
+            title="Superscript"
+            aria-label="Format Superscript">
+            <i className="format superscript" />
+          </button>
+        </>
+      )}
+      {config.codeBlock && (
+        <button
+          onClick={() => {
+            editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code');
+          }}
+          className={'popup-item spaced ' + (isCode ? 'active' : '')}
+          aria-label="Insert code block">
+          <i className="format code" />
+        </button>
+      )}
+      {config.link && (
+        <button
+          onClick={insertLink}
+          className={'popup-item spaced ' + (isLink ? 'active' : '')}
+          aria-label="Insert link">
+          <i className="format link" />
+        </button>
+      )}
       <button
         onClick={insertComment}
         className={'popup-item spaced ' + (isLink ? 'active' : '')}
@@ -257,6 +272,7 @@ function getSelectedNode(selection: RangeSelection): TextNode | ElementNode {
 
 function useTextFormatFloatingToolbar(
   editor: LexicalEditor,
+  config: ToolbarConfig,
 ): JSX.Element | null {
   const [isText, setIsText] = useState(false);
   const [isLink, setIsLink] = useState(false);
@@ -341,6 +357,7 @@ function useTextFormatFloatingToolbar(
 
   return createPortal(
     <TextFormatFloatingToolbar
+      config={config}
       editor={editor}
       isLink={isLink}
       isBold={isBold}
@@ -355,7 +372,11 @@ function useTextFormatFloatingToolbar(
   );
 }
 
-export default function TextFormatFloatingToolbarPlugin(): JSX.Element | null {
+export default function TextFormatFloatingToolbarPlugin({
+  config,
+}: {
+  config: ToolbarConfig;
+}): JSX.Element | null {
   const [editor] = useLexicalComposerContext();
-  return useTextFormatFloatingToolbar(editor);
+  return useTextFormatFloatingToolbar(editor, config);
 }

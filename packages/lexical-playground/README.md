@@ -59,6 +59,34 @@ export default function PlaygroundApp(): JSX.Element {
 }
 ```
 
+### Customizing the toolbar
+Certain buttons can be ommited from the toolbar, and some can be configured if necessary:
+```tsx
+import { Editor, EditorComposer, EditorProps } from '@ohs/lexical-playground';
+
+const toolbarConfig: EditorProps['toolbarConfig'] = {
+  textColorPicker: false,
+  bgColorPicker: false,
+  fontFamilyOptions: [
+    ['Roboto', 'Roboto'],
+    ['Open Sans', 'Open Sans'],
+  ],
+};
+
+function MyEditor(): JSX.Element {
+  return <Editor toolbarConfig={toolbarConfig} isRichText />;
+};
+
+export default function PlaygroundApp(): JSX.Element {
+  return (
+    <EditorComposer>
+      <MyEditor />
+    </EditorComposer>
+  );
+}
+
+```
+
 ### Uploading an image and returning a path
 By default images are converted to data URLs.
 ```tsx
