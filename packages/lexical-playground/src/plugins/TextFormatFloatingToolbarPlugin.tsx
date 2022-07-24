@@ -28,8 +28,6 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import * as React from 'react';
 import {createPortal} from 'react-dom';
 
-import {INSERT_INLINE_COMMAND} from './CommentPlugin';
-
 function setPopupPosition(
   editor: HTMLElement,
   rect: ClientRect,
@@ -90,10 +88,6 @@ function TextFormatFloatingToolbar({
       editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
     }
   }, [editor, isLink]);
-
-  const insertComment = () => {
-    editor.dispatchCommand(INSERT_INLINE_COMMAND, undefined);
-  };
 
   const updateTextFormatFloatingToolbar = useCallback(() => {
     const selection = $getSelection();
@@ -244,12 +238,6 @@ function TextFormatFloatingToolbar({
           <i className="format link" />
         </button>
       )}
-      <button
-        onClick={insertComment}
-        className={'popup-item spaced ' + (isLink ? 'active' : '')}
-        aria-label="Insert link">
-        <i className="format add-comment" />
-      </button>
     </div>
   );
 }
