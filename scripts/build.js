@@ -69,9 +69,9 @@ const lexicalReactModules = fs
       !str.includes('test-utils'),
   );
 
-const lexicalPlaygroundExtensions = fs.readdirSync(
-  path.resolve('./packages/lexical-playground/src/ext'),
-);
+const lexicalPlaygroundExtensions = fs
+  .readdirSync(path.resolve('./packages/lexical-playground/src/ext'))
+  .filter((str) => !str.includes('extTypes'));
 
 const lexicalReactModuleExternals = lexicalReactModules.map((module) => {
   const basename = path.basename(path.basename(module, '.ts'), '.tsx');
