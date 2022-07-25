@@ -367,6 +367,7 @@ export type SerializedImageNode = Spread<
 const genClassName = (theme: EditorThemeClasses, align?: ImageAlign) => {
   return joinClasses(
     theme.image,
+    'editor-image',
     align === 'left' && theme.imageAlign.left,
     align === 'center' && theme.imageAlign.center,
     align === 'right' && theme.imageAlign.right,

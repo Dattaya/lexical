@@ -259,7 +259,7 @@ export class ExcalidrawNode extends DecoratorNode<JSX.Element> {
     const theme = config.theme;
     const className = theme.image;
     if (className !== undefined) {
-      span.className = className;
+      span.className = `${className} editor-image`;
     }
     return span;
   }

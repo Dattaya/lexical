@@ -58,7 +58,7 @@ const theme: EditorThemeClasses = {
     h5: 'PlaygroundEditorTheme__h5',
     h6: 'PlaygroundEditorTheme__h6',
   },
-  image: 'editor-image',
+  image: 'PlaygroundEditorTheme__image',
   imageAlign: {
     center: 'PlaygroundEditorTheme__imageCenter',
     left: 'PlaygroundEditorTheme__imageLeft',
