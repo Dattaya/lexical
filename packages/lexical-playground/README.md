@@ -86,7 +86,32 @@ export default function PlaygroundApp(): JSX.Element {
 }
 
 ```
+### Theme overriding
+It's recommended to replace built-in class names with your own:
 
+```tsx
+import { Editor, EditorComposer, EditorThemeClasses } from '@ohs/lexical-playground';
+import '@ohs/lexical-playground/editor.css';
+import './myTheme.css';
+
+const theme: EditorThemeClasses = {
+  characterLimit: 'MyTheme__characterLimit',
+  code: 'MyTheme__code',
+  // ...
+};
+
+function MyEditor(): JSX.Element {
+  return <Editor isRichText />;
+}
+
+export default function PlaygroundApp(): JSX.Element {
+  return (
+    <EditorComposer initialConfig={{ theme }}>
+      <MyEditor />
+    </EditorComposer>
+  );
+}
+```
 ### Uploading an image and returning a path
 By default images are converted to data URLs.
 ```tsx
