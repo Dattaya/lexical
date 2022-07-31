@@ -4,7 +4,11 @@ import {useState} from 'react';
 
 import {Editor, EditorComposer, useSyncWithInputHtml} from './index';
 
+const delay = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
 const uploadImg = async (file: File, altText: string) => {
+  await delay(500);
   return `https://placehold.co/300x300?text=${altText}`;
 };
 

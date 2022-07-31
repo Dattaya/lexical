@@ -495,6 +495,10 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     writable.__align = align;
   }
 
+  setSrc(src: string): void {
+    const writable = this.getWritable();
+    writable.__src = src;
+  }
   // View
 
   createDOM(config: EditorConfig): HTMLElement {

@@ -100,6 +100,7 @@ import {INSERT_POLL_COMMAND} from './PollPlugin';
 import {INSERT_TWEET_COMMAND} from './TwitterPlugin';
 import {INSERT_YOUTUBE_COMMAND} from './YouTubePlugin';
 import {useEditorComposerContext} from '../EditorComposerContext';
+import {$isImageNode} from '../nodes/ImageNode';
 
 const blockTypeToBlockName = {
   bullet: 'Bulleted List',
@@ -429,24 +430,39 @@ export function InsertImageDialog({
   };
 
   const onUploadClick = async ({file, altText}: InsertImagePayload1) => {
-    if (onUpload) {
-      const imgUrl = await onUpload(file, altText);
-      activeEditor.dispatchCommand(INSERT_IMAGE_COMMAND, {
-        altText,
-        src: imgUrl,
-      });
-    } else {
-      const reader = new FileReader();
-      reader.onload = function () {
-        if (typeof reader.result === 'string') {
-          activeEditor.dispatchCommand(INSERT_IMAGE_COMMAND, {
-            altText,
-            src: reader.result,
+    const reader = new FileReader();
+    reader.onload = function () {
+      if (typeof reader.result === 'string') {
+        const isSuccess = activeEditor.dispatchCommand(INSERT_IMAGE_COMMAND, {
+          altText,
+          src: reader.result,
+        });
+        if (isSuccess && onUpload) {
+          activeEditor.update(async () => {
+            const selection = $getSelection();
+            const node = selection?.getNodes()[0];
+            if (node && $isImageNode(node)) {
+              try {
+                const imgUrl = await onUpload(file, altText);
+                const preloadImage = new Image();
+                preloadImage.onload = () => {
+                  activeEditor.update(() => {
+                    node.setSrc(imgUrl);
+                  });
+                };
+                preloadImage.onerror = () => {
+                  node.remove();
+                };
+                preloadImage.src = imgUrl;
+              } catch (e: unknown) {
+                node.remove();
+              }
+            }
           });
         }
-      };
-      reader.readAsDataURL(file);
-    }
+      }
+    };
+    reader.readAsDataURL(file);
     onClose();
   };
 
