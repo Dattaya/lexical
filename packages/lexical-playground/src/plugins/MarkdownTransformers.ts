@@ -41,7 +41,6 @@ import {
   $isTextNode,
 } from 'lexical';
 
-import {$createEquationNode, $isEquationNode} from '../nodes/EquationNode';
 import {$createImageNode, $isImageNode} from '../nodes/ImageNode';
 import {$createTweetNode, $isTweetNode} from '../nodes/TweetNode';
 
@@ -85,25 +84,6 @@ export const IMAGE: TextMatchTransformer = {
     textNode.replace(imageNode);
   },
   trigger: ')',
-  type: 'text-match',
-};
-
-export const EQUATION: TextMatchTransformer = {
-  export: (node, exportChildren, exportFormat) => {
-    if (!$isEquationNode(node)) {
-      return null;
-    }
-
-    return `$${node.getEquation()}$`;
-  },
-  importRegExp: /\$([^$].+?)\$/,
-  regExp: /\$([^$].+?)\$$/,
-  replace: (textNode, match) => {
-    const [, equation] = match;
-    const equationNode = $createEquationNode(equation, true);
-    textNode.replace(equationNode);
-  },
-  trigger: '$',
   type: 'text-match',
 };
 
@@ -258,7 +238,6 @@ export const PLAYGROUND_TRANSFORMERS: Array<Transformer> = [
   TABLE,
   HR,
   IMAGE,
-  EQUATION,
   TWEET,
   CHECK_LIST,
   ...ELEMENT_TRANSFORMERS,

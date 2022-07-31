@@ -93,10 +93,8 @@ import Button from '../ui/Button';
 import ColorPicker from '../ui/ColorPicker';
 import DropDown, {DropDownItem} from '../ui/DropDown';
 import FileInput from '../ui/FileInput';
-import KatexEquationAlterer from '../ui/KatexEquationAlterer';
 import LinkPreview from '../ui/LinkPreview';
 import TextInput from '../ui/TextInput';
-import {INSERT_EQUATION_COMMAND} from './EquationsPlugin';
 import {INSERT_IMAGE_COMMAND} from './ImagesPlugin';
 import {INSERT_POLL_COMMAND} from './PollPlugin';
 import {INSERT_TWEET_COMMAND} from './TwitterPlugin';
@@ -628,24 +626,6 @@ function InsertYouTubeDialog({
       </div>
     </>
   );
-}
-
-export function InsertEquationDialog({
-  activeEditor,
-  onClose,
-}: {
-  activeEditor: LexicalEditor;
-  onClose: () => void;
-}): JSX.Element {
-  const onEquationConfirm = useCallback(
-    (equation: string, inline: boolean) => {
-      activeEditor.dispatchCommand(INSERT_EQUATION_COMMAND, {equation, inline});
-      onClose();
-    },
-    [activeEditor, onClose],
-  );
-
-  return <KatexEquationAlterer onConfirm={onEquationConfirm} />;
 }
 
 function dropDownActiveClass(active: boolean) {
@@ -1399,19 +1379,6 @@ export default function ToolbarPlugin({
                 className="item">
                 <i className="icon youtube" />
                 <span className="text">YouTube Video</span>
-              </DropDownItem>
-              <DropDownItem
-                onClick={() => {
-                  showModal('Insert Equation', (onClose) => (
-                    <InsertEquationDialog
-                      activeEditor={activeEditor}
-                      onClose={onClose}
-                    />
-                  ));
-                }}
-                className="item">
-                <i className="icon equation" />
-                <span className="text">Equation</span>
               </DropDownItem>
               <DropDownItem
                 onClick={() => {

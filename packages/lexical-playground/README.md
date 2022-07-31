@@ -182,25 +182,27 @@ export default MyPage
 ```
 
 ### Using optional plugins
-Some plugins like `excalidraw` are optional, and need to be manually activated:
+Some plugins like `excalidraw` and `equation` are optional, and need to be manually activated:
 
 ```tsx
 // ...
 import {excalidrawExt} from '@ohs/lexical-playground/ext/excalidraw';
 import '@ohs/lexical-playground/ext/excalidraw.css';
+import {equationExt} from '@ohs/lexical-playground/ext/equation';
+import '@ohs/lexical-playground/ext/equation.css';
 
 function MyEditor(): JSX.Element {
   return (
-    <Editor isRichText={true} />
+    <Editor isRichText />
   );
 }
 
-const extensions = [excalidrawExt];
+const extensions = [equationExt, excalidrawExt];
 
 export default function PlaygroundApp(): JSX.Element {
   return (
     <EditorComposer extensions={extensions}>
-      <App />
+      <MyEditor />
     </EditorComposer>
   );
 }

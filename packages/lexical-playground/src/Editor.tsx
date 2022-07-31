@@ -37,7 +37,6 @@ import ClickableLinkPlugin from './plugins/ClickableLinkPlugin';
 import CodeActionMenuPlugin from './plugins/CodeActionMenuPlugin';
 import CodeHighlightPlugin from './plugins/CodeHighlightPlugin';
 import EmojisPlugin from './plugins/EmojisPlugin';
-import EquationsPlugin from './plugins/EquationsPlugin';
 import HorizontalRulePlugin from './plugins/HorizontalRulePlugin';
 import ImagesPlugin from './plugins/ImagesPlugin';
 import KeywordsPlugin from './plugins/KeywordsPlugin';
@@ -196,7 +195,6 @@ export default function Editor({
             <ClickableLinkPlugin />
             <HorizontalRulePlugin />
             <TextFormatFloatingToolbarPlugin config={normToolbarConfig} />
-            <EquationsPlugin />
             <TabFocusPlugin />
             {editorContext.extensions.plugins.map(([extName, Plugin]) => (
               <Plugin key={extName} />
