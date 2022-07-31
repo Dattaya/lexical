@@ -83,7 +83,9 @@ import {ChangeEvent, useCallback, useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {IS_APPLE} from 'shared/environment';
 
+import {useEditorComposerContext} from '../EditorComposerContext';
 import useModal from '../hooks/useModal';
+import {$isImageNode} from '../nodes/ImageNode';
 import {$createStickyNode} from '../nodes/StickyNode';
 import {$isTweetNode} from '../nodes/TweetNode';
 import {$isYouTubeNode} from '../nodes/YouTubeNode';
@@ -99,8 +101,6 @@ import {INSERT_IMAGE_COMMAND} from './ImagesPlugin';
 import {INSERT_POLL_COMMAND} from './PollPlugin';
 import {INSERT_TWEET_COMMAND} from './TwitterPlugin';
 import {INSERT_YOUTUBE_COMMAND} from './YouTubePlugin';
-import {useEditorComposerContext} from '../EditorComposerContext';
-import {$isImageNode} from '../nodes/ImageNode';
 
 const blockTypeToBlockName = {
   bullet: 'Bulleted List',
@@ -1426,9 +1426,9 @@ export default function ToolbarPlugin({
                 <span className="text">Sticky Note</span>
               </DropDownItem>
               {editorContext.extensions.toolbarInsertsAfter.map(
-                (DropDownItem, i) => (
-                  <DropDownItem
-                    key={i}
+                ([extName, ExtDropDownItem]) => (
+                  <ExtDropDownItem
+                    key={extName}
                     showModal={showModal}
                     activeEditor={activeEditor}
                   />

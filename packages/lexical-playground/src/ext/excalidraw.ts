@@ -9,6 +9,7 @@ export * from '../nodes/ExcalidrawNode';
 export {ExcalidrawPlugin};
 
 export const excalidrawExt: Extension = {
+  name: 'excalidraw',
   node: ExcalidrawNode,
   plugin: ExcalidrawPlugin,
   toolbarInsertAfter: ExcalidrawDropDownItem,

@@ -1,13 +1,14 @@
 /* eslint-disable header/header */
 import type {Extensions} from './EditorComposerContext';
+import type {Extension} from './ext/extTypes';
+
 import {LexicalComposer} from '@lexical/react/LexicalComposer';
 import * as React from 'react';
 import {useMemo} from 'react';
 
+import {EditorComposerContext} from './EditorComposerContext';
 import PlaygroundNodes from './nodes/PlaygroundNodes';
 import PlaygroundEditorTheme from './themes/PlaygroundEditorTheme';
-import type {Extension} from './ext/extTypes';
-import {EditorComposerContext} from './EditorComposerContext';
 
 export type EditorComposerProps = {
   children: React.ComponentProps<typeof LexicalComposer>['children'];
@@ -27,18 +28,22 @@ export default function EditorComposer({
       extensions: (extensions ?? []).reduce(
         (acc, extension) => {
           if (extension.node) acc.nodes.push(extension.node);
-          if (extension.plugin) acc.plugins.push(extension.plugin);
+          if (extension.plugin)
+            acc.plugins.push([extension.name, extension.plugin]);
           if (extension.transformer)
             acc.transformers.push(extension.transformer);
           if (extension.toolbarInsertAfter)
-            acc.toolbarInsertsAfter.push(extension.toolbarInsertAfter);
+            acc.toolbarInsertsAfter.push([
+              extension.name,
+              extension.toolbarInsertAfter,
+            ]);
           return acc;
         },
         {
           nodes: [],
           plugins: [],
-          transformers: [],
           toolbarInsertsAfter: [],
+          transformers: [],
         } as Extensions,
       ),
     }),

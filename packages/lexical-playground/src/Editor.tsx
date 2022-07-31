@@ -6,8 +6,8 @@
  *
  */
 
-import type {EditorState, LexicalEditor} from 'lexical';
 import type {ToolbarConfig} from './plugins/toolbarTypes';
+import type {EditorState, LexicalEditor} from 'lexical';
 
 import {$generateHtmlFromNodes} from '@lexical/html';
 import {AutoFocusPlugin} from '@lexical/react/LexicalAutoFocusPlugin';
@@ -198,8 +198,8 @@ export default function Editor({
             <TextFormatFloatingToolbarPlugin config={normToolbarConfig} />
             <EquationsPlugin />
             <TabFocusPlugin />
-            {editorContext.extensions.plugins.map((Plugin, i) => (
-              <Plugin key={i} />
+            {editorContext.extensions.plugins.map(([extName, Plugin]) => (
+              <Plugin key={extName} />
             ))}
           </>
         ) : (
