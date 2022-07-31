@@ -135,7 +135,7 @@ function MyEditor(): JSX.Element {
   const [editor] = useLexicalComposerContext();
 
   return (
-    <Editor isRichText={true} />
+    <Editor isRichText />
   );
 }
 
