@@ -6,6 +6,7 @@
  *
  */
 
+// @ts-nocheck
 import {$createCodeNode} from '@lexical/code';
 import {
   INSERT_CHECK_LIST_COMMAND,
@@ -22,7 +23,6 @@ import {
 import {$createHeadingNode, $createQuoteNode} from '@lexical/rich-text';
 import {$wrapLeafNodesInElements} from '@lexical/selection';
 import {INSERT_TABLE_COMMAND} from '@lexical/table';
-import {INSERT_EXCALIDRAW_COMMAND} from './ExcalidrawPlugin';
 import {
   $createParagraphNode,
   $getSelection,
@@ -35,6 +35,7 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
 import useModal from '../hooks/useModal';
+import {INSERT_EXCALIDRAW_COMMAND} from './ExcalidrawPlugin';
 import {INSERT_IMAGE_COMMAND} from './ImagesPlugin';
 import {
   InsertEquationDialog,
