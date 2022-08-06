@@ -3,6 +3,16 @@
 A temporary packaged fork of Lexical's official playground until someone creates something better.
 
 ## Usage
+  - [HTML as input/output](#html-as-inputoutput)
+  - [A JSON string as input/output](#a-json-string-as-inputoutput)
+  - [Customizing the toolbar](#customizing-the-toolbar)
+  - [Theme overriding](#theme-overriding)
+  - [Uploading an image and returning a path](#uploading-an-image-and-returning-a-path)
+  - [Getting an access to the lexical editor's instance](#getting-an-access-to-the-lexical-editors-instance)
+  - [Showing exported HTML w/o loading the entire editor](#showing-exported-html-wo-loading-the-entire-editor)
+  - [SSR](#ssr)
+  - [Using optional plugins](#using-optional-plugins)
+
 ### HTML as input/output
 
 ```tsx
