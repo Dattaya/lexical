@@ -1,7 +1,7 @@
 /* eslint-disable header/header */
 import * as React from 'react';
 
-import {Editor, EditorComposer, EditorProps} from './index';
+import {Editor, EditorComposer, EditorProps} from '../index';
 
 const toolbarConfig: EditorProps['toolbarConfig'] = {
   bgColorPicker: false,

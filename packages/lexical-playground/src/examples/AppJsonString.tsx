@@ -2,7 +2,7 @@
 import * as React from 'react';
 import {useState} from 'react';
 
-import {Editor, EditorComposer, useSyncWithInputJson} from './index';
+import {Editor, EditorComposer, useSyncWithInputJson} from '../index';
 
 function App({
   json,

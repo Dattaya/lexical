@@ -2,7 +2,7 @@
 import * as React from 'react';
 import {useState} from 'react';
 
-import {Editor, EditorComposer, useSyncWithInputHtml} from './index';
+import {Editor, EditorComposer, useSyncWithInputHtml} from '../index';
 
 const delay = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
