@@ -8,12 +8,7 @@
 
 import './index.css';
 
-import {
-  $isCodeNode,
-  CodeNode,
-  getLanguageFriendlyName,
-  normalizeCodeLang,
-} from '@lexical/code';
+import {$isCodeNode, CodeNode, getLanguageFriendlyName} from '@lexical/code';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 import {$getNearestNodeFromDOMNode} from 'lexical';
 import {useEffect, useRef, useState} from 'react';
@@ -21,7 +16,6 @@ import * as React from 'react';
 import {createPortal} from 'react-dom';
 
 import {CopyButton} from './components/CopyButton';
-import {canBePrettier, PrettierButton} from './components/PrettierButton';
 import {useDebounce} from './utils';
 
 const CODE_PADDING = 8;
@@ -126,7 +120,6 @@ function CodeActionMenuContainer(): JSX.Element {
       }
     });
   });
-  const normalizedLang = normalizeCodeLang(lang);
   const codeFriendlyName = getLanguageFriendlyName(lang);
 
   return (
@@ -135,13 +128,6 @@ function CodeActionMenuContainer(): JSX.Element {
         <div className="code-action-menu-container" style={{...position}}>
           <div className="code-highlight-language">{codeFriendlyName}</div>
           <CopyButton editor={editor} getCodeDOMNode={getCodeDOMNode} />
-          {canBePrettier(normalizedLang) ? (
-            <PrettierButton
-              editor={editor}
-              getCodeDOMNode={getCodeDOMNode}
-              lang={normalizedLang}
-            />
-          ) : null}
         </div>
       ) : null}
     </>
