@@ -3,7 +3,7 @@ import type {Extension} from './extTypes';
 
 import {ExcalidrawNode} from '../nodes/ExcalidrawNode';
 import ExcalidrawPlugin from '../plugins/ExcalidrawPlugin';
-import ExcalidrawDropDownItem from '../plugins/ToolbarPluginItems/ExcalidrawDropDownItem';
+import ExcalidrawDropDownItem from '../plugins/ToolbarPlugin/ExcalidrawDropDownItem';
 
 export * from '../nodes/ExcalidrawNode';
 export {ExcalidrawPlugin};

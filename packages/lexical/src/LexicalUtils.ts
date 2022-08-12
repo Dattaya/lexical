@@ -165,11 +165,14 @@ export function $isTokenOrInert(node: TextNode): boolean {
   return node.isToken() || node.isInert();
 }
 
+function isDOMNodeLexicalTextNode(node: Node): node is Text {
+  return node.nodeType === DOM_TEXT_TYPE;
+}
+
 export function getDOMTextNode(element: Node | null): Text | null {
   let node = element;
   while (node != null) {
-    if (node.nodeType === DOM_TEXT_TYPE) {
-      // @ts-expect-error: this is a Text
+    if (isDOMNodeLexicalTextNode(node)) {
       return node;
     }
     node = node.firstChild;
@@ -496,7 +499,6 @@ export function createUID(): string {
 }
 
 export function $updateSelectedTextFromDOM(
-  editor: LexicalEditor,
   isCompositionEnd: boolean,
   data?: string,
 ): void {
@@ -579,7 +581,7 @@ export function $updateTextNodeFromDOMContent(
         $isTokenOrInert(node) ||
         ($getCompositionKey() !== null && !isComposing) ||
         // Check if character was added at the start, and we need
-        // to clear this input from occuring as that action wasn't
+        // to clear this input from occurring as that action wasn't
         // permitted.
         (parent !== null &&
           $isRangeSelection(prevSelection) &&
@@ -882,7 +884,6 @@ function isArrowDown(keyCode: number): boolean {
 export function isMoveBackward(
   keyCode: number,
   ctrlKey: boolean,
-  shiftKey: boolean,
   altKey: boolean,
   metaKey: boolean,
 ): boolean {
@@ -902,7 +903,6 @@ export function isMoveToStart(
 export function isMoveForward(
   keyCode: number,
   ctrlKey: boolean,
-  shiftKey: boolean,
   altKey: boolean,
   metaKey: boolean,
 ): boolean {
@@ -922,8 +922,6 @@ export function isMoveToEnd(
 export function isMoveUp(
   keyCode: number,
   ctrlKey: boolean,
-  shiftKey: boolean,
-  altKey: boolean,
   metaKey: boolean,
 ): boolean {
   return isArrowUp(keyCode) && !ctrlKey && !metaKey;
@@ -932,8 +930,6 @@ export function isMoveUp(
 export function isMoveDown(
   keyCode: number,
   ctrlKey: boolean,
-  shiftKey: boolean,
-  altKey: boolean,
   metaKey: boolean,
 ): boolean {
   return isArrowDown(keyCode) && !ctrlKey && !metaKey;
@@ -1121,7 +1117,8 @@ export function getElementByKeyOrThrow(
   if (element === undefined) {
     invariant(
       false,
-      'Reconciliation: could not find DOM element for node key "${key}"',
+      'Reconciliation: could not find DOM element for node key %s',
+      key,
     );
   }
 
@@ -1175,4 +1172,38 @@ export function $addUpdateTag(tag: string): void {
   errorOnReadOnly();
   const editor = getActiveEditor();
   editor._updateTags.add(tag);
+}
+
+export function $maybeMoveChildrenSelectionToParent(
+  parentNode: LexicalNode,
+  offset = 0,
+): RangeSelection | NodeSelection | GridSelection | null {
+  if (offset !== 0) {
+    invariant(false, 'TODO');
+  }
+  const selection = $getSelection();
+  if (!$isRangeSelection(selection) || !$isElementNode(parentNode)) {
+    return selection;
+  }
+  const {anchor, focus} = selection;
+  const anchorNode = anchor.getNode();
+  const focusNode = focus.getNode();
+  if ($hasAncestor(anchorNode, parentNode)) {
+    anchor.set(parentNode.__key, 0, 'element');
+  }
+  if ($hasAncestor(focusNode, parentNode)) {
+    focus.set(parentNode.__key, 0, 'element');
+  }
+  return selection;
+}
+
+function $hasAncestor(child: LexicalNode, targetNode: LexicalNode): boolean {
+  let parent = child.getParent();
+  while (parent !== null) {
+    if (parent.is(targetNode)) {
+      return true;
+    }
+    parent = parent.getParent();
+  }
+  return false;
 }

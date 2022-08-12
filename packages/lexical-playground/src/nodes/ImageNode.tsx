@@ -26,10 +26,8 @@ import type {
 
 import './ImageNode.css';
 
-import {
-  CollaborationPlugin,
-  useCollaborationContext,
-} from '@lexical/react/LexicalCollaborationPlugin';
+import {useCollaborationContext} from '@lexical/react/LexicalCollaborationContext';
+import {CollaborationPlugin} from '@lexical/react/LexicalCollaborationPlugin';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 import {HashtagPlugin} from '@lexical/react/LexicalHashtagPlugin';
 import {HistoryPlugin} from '@lexical/react/LexicalHistoryPlugin';
@@ -164,9 +162,8 @@ function ImageComponent({
   const [isSelected, setSelected, clearSelection] =
     useLexicalNodeSelection(nodeKey);
   const [isResizing, setIsResizing] = useState<boolean>(false);
-  const {yjsDocMap} = useCollaborationContext();
+  const {isCollabActive} = useCollaborationContext();
   const [editor] = useLexicalComposerContext();
-  const isCollab = yjsDocMap.get('main') !== undefined;
   const [selection, setSelection] = useState<
     RangeSelection | NodeSelection | GridSelection | null
   >(null);
@@ -305,7 +302,7 @@ function ImageComponent({
               <EmojisPlugin />
               <HashtagPlugin />
               <KeywordsPlugin />
-              {isCollab ? (
+              {isCollabActive ? (
                 <CollaborationPlugin
                   id={caption.getKey()}
                   providerFactory={createWebsocketProvider}

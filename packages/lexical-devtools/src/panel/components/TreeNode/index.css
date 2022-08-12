@@ -1,0 +1,24 @@
+.indentation {
+  background: #222;
+  border: none;
+  color: #222;
+  margin: 0;
+  padding: 0;
+  text-decoration: none;
+  user-select: none;
+}
+
+.tree-node:hover {
+  background: #77b6ff;
+  color: #222;
+}
+
+.tree-node-wrapper {
+  cursor: pointer;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.tree-node-wrapper:first-child {
+  width: 100vw;
+}

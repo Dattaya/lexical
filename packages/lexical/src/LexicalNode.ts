@@ -13,7 +13,13 @@ import type {Klass} from 'lexical';
 
 import invariant from 'shared/invariant';
 
-import {$isElementNode, $isRootNode, $isTextNode, ElementNode} from '.';
+import {
+  $isDecoratorNode,
+  $isElementNode,
+  $isRootNode,
+  $isTextNode,
+  ElementNode,
+} from '.';
 import {
   $getSelection,
   $isRangeSelection,
@@ -29,6 +35,7 @@ import {
 import {
   $getCompositionKey,
   $getNodeByKey,
+  $maybeMoveChildrenSelectionToParent,
   $setCompositionKey,
   $setNodeKey,
   internalMarkNodeAsDirty,
@@ -54,7 +61,7 @@ export function removeNode(
   if (parent === null) {
     return;
   }
-  const selection = $getSelection();
+  const selection = $maybeMoveChildrenSelectionToParent(nodeToRemove);
   let selectionMoved = false;
   if ($isRangeSelection(selection) && restoreSelection) {
     const anchor = selection.anchor;
@@ -285,7 +292,10 @@ export class LexicalNode {
     let node: ElementNode | this | null = this;
     while (node !== null) {
       const parent: ElementNode | this | null = node.getParent();
-      if ($isRootNode(parent) && $isElementNode(node)) {
+      if (
+        $isRootNode(parent) &&
+        ($isElementNode(node) || ($isDecoratorNode(node) && node.isTopLevel()))
+      ) {
         return node;
       }
       node = parent;

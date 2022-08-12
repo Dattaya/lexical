@@ -20,6 +20,7 @@ import {TableCellNode, TableNode, TableRowNode} from '@lexical/table';
 
 import {AutocompleteNode} from './AutocompleteNode';
 import {EmojiNode} from './EmojiNode';
+import {FigmaNode} from './FigmaNode';
 import {ImageNode} from './ImageNode';
 import {KeywordNode} from './KeywordNode';
 import {MentionNode} from './MentionNode';
@@ -54,6 +55,7 @@ const PlaygroundNodes: Array<Klass<LexicalNode>> = [
   HorizontalRuleNode,
   TweetNode,
   YouTubeNode,
+  FigmaNode,
   MarkNode,
 ];
 

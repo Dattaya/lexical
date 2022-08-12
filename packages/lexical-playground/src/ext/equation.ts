@@ -3,7 +3,7 @@ import type {Extension} from './extTypes';
 
 import {EquationNode} from '../nodes/EquationNode';
 import EquationsPlugin from '../plugins/EquationsPlugin';
-import EquationDropDownItem from '../plugins/ToolbarPluginItems/EquationDropDownItem';
+import EquationDropDownItem from '../plugins/ToolbarPlugin/EquationDropDownItem';
 import {EQUATION} from '../plugins/Transformers/equationTransformer';
 
 export * from '../nodes/EquationNode';

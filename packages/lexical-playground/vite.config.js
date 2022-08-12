@@ -127,6 +127,7 @@ const moduleResolution = [
   'LexicalPlainTextPlugin',
   'LexicalRichTextPlugin',
   'LexicalClearEditorPlugin',
+  'LexicalCollaborationContext',
   'LexicalCollaborationPlugin',
   'LexicalHistoryPlugin',
   'LexicalTypeaheadMenuPlugin',
@@ -137,6 +138,7 @@ const moduleResolution = [
   'LexicalAutoFocusPlugin',
   "LexicalTableOfContents__EXPERIMENTAL",
   'LexicalAutoLinkPlugin',
+  'LexicalAutoEmbedPlugin',
   'LexicalOnChangePlugin',
   'LexicalAutoScrollPlugin',
 ].forEach((module) => {

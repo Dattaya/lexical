@@ -253,6 +253,31 @@ export class HeadingNode extends ElementNode {
         conversion: convertHeadingElement,
         priority: 0,
       }),
+      p: (node: Node) => {
+        // domNode is a <p> since we matched it by nodeName
+        const paragraph = node as HTMLParagraphElement;
+        const firstChild = paragraph.firstChild;
+        if (firstChild !== null && isGoogleDocsTitle(firstChild)) {
+          return {
+            conversion: () => ({node: null}),
+            priority: 3,
+          };
+        }
+        return null;
+      },
+      span: (node: Node) => {
+        if (isGoogleDocsTitle(node)) {
+          return {
+            conversion: (domNode: Node) => {
+              return {
+                node: $createHeadingNode('h1'),
+              };
+            },
+            priority: 3,
+          };
+        }
+        return null;
+      },
     };
   }
 
@@ -294,6 +319,13 @@ export class HeadingNode extends ElementNode {
   extractWithChild(): boolean {
     return true;
   }
+}
+
+function isGoogleDocsTitle(domNode: Node): boolean {
+  if (domNode.nodeName.toLowerCase() === 'span') {
+    return (domNode as HTMLSpanElement).style.fontSize === '26pt';
+  }
+  return false;
 }
 
 function convertHeadingElement(domNode: Node): DOMConversionOutput {
@@ -377,17 +409,22 @@ function onPasteForRichText(
   editor: LexicalEditor,
 ): void {
   event.preventDefault();
-  editor.update(() => {
-    const selection = $getSelection();
-    const clipboardData =
-      event instanceof InputEvent ? null : event.clipboardData;
-    if (
-      clipboardData != null &&
-      ($isRangeSelection(selection) || $isGridSelection(selection))
-    ) {
-      $insertDataTransferForRichText(clipboardData, selection, editor);
-    }
-  });
+  editor.update(
+    () => {
+      const selection = $getSelection();
+      const clipboardData =
+        event instanceof InputEvent ? null : event.clipboardData;
+      if (
+        clipboardData != null &&
+        ($isRangeSelection(selection) || $isGridSelection(selection))
+      ) {
+        $insertDataTransferForRichText(clipboardData, selection, editor);
+      }
+    },
+    {
+      tag: 'paste',
+    },
+  );
 }
 
 function onCopyForRichText(
@@ -748,7 +785,7 @@ export function registerRichText(
           // If we have beforeinput, then we can avoid blocking
           // the default behavior. This ensures that the iOS can
           // intercept that we're actually inserting a paragraph,
-          // and autocomplete, autocapitialize etc work as intended.
+          // and autocomplete, autocapitalize etc work as intended.
           // This can also cause a strange performance issue in
           // Safari, where there is a noticeable pause due to
           // preventing the key down of enter.

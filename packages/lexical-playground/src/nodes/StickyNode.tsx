@@ -17,10 +17,8 @@ import type {
 
 import './StickyNode.css';
 
-import {
-  CollaborationPlugin,
-  useCollaborationContext,
-} from '@lexical/react/LexicalCollaborationPlugin';
+import {useCollaborationContext} from '@lexical/react/LexicalCollaborationContext';
+import {CollaborationPlugin} from '@lexical/react/LexicalCollaborationPlugin';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 import {HistoryPlugin} from '@lexical/react/LexicalHistoryPlugin';
 import {LexicalNestedComposer} from '@lexical/react/LexicalNestedComposer';
@@ -86,8 +84,7 @@ function StickyComponent({
     x: 0,
     y: 0,
   });
-  const {yjsDocMap} = useCollaborationContext();
-  const isCollab = yjsDocMap.get('main') !== undefined;
+  const {isCollabActive} = useCollaborationContext();
 
   useEffect(() => {
     const position = positioningRef.current;
@@ -252,7 +249,7 @@ function StickyComponent({
         <LexicalNestedComposer
           initialEditor={caption}
           initialTheme={StickyEditorTheme}>
-          {isCollab ? (
+          {isCollabActive ? (
             <CollaborationPlugin
               id={caption.getKey()}
               providerFactory={createWebsocketProvider}

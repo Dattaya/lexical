@@ -116,16 +116,13 @@ export function $insertDataTransferForRichText(
     try {
       const parser = new DOMParser();
       const dom = parser.parseFromString(htmlString, 'text/html');
-      return $insertGeneratedNodes(
-        editor,
-        $generateNodesFromDOM(editor, dom),
-        selection,
-      );
+      const nodes = $generateNodesFromDOM(editor, dom);
+      return $insertGeneratedNodes(editor, nodes, selection);
       // eslint-disable-next-line no-empty
     } catch {}
   }
 
-  // Multi-line plain text in rich text mode pasted as separate paragrahs
+  // Multi-line plain text in rich text mode pasted as separate paragraphs
   // instead of single paragraph with linebreaks.
   const text = dataTransfer.getData('text/plain');
   if (text != null) {

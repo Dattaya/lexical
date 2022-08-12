@@ -28,6 +28,7 @@ import {
 } from 'lexical';
 import {$createRangeSelection, $setSelection} from 'lexical/src';
 import {
+  $assertRangeSelection,
   $createTestDecoratorNode,
   $createTestElementNode,
   createTestEditor,
@@ -49,6 +50,7 @@ import {
   formatStrikeThrough,
   formatUnderline,
   getNodeFromPath,
+  insertParagraph,
   insertSegmentedNode,
   insertText,
   insertTokenNode,
@@ -439,6 +441,136 @@ describe('LexicalSelection tests', () => {
         convertToSegmentedNode(),
       ],
       name: 'Convert text to a segmented node',
+    },
+    {
+      expectedHTML:
+        '<div contenteditable="true" style="user-select: text; white-space: pre-wrap; word-break: break-word;" data-lexical-editor="true">' +
+        '<p class="editor-paragraph"><br></p>' +
+        '<p class="editor-paragraph" dir="ltr">' +
+        '<strong class="editor-text-bold" data-lexical-text="true">Hello world</strong>' +
+        '</p>' +
+        '<p class="editor-paragraph"><br></p>' +
+        '</div>',
+      expectedSelection: {
+        anchorOffset: 0,
+        anchorPath: [0],
+        focusOffset: 0,
+        focusPath: [2],
+      },
+      inputs: [
+        insertParagraph(),
+        insertText('Hello world'),
+        insertParagraph(),
+        moveNativeSelection([0], 0, [2], 0),
+        formatBold(),
+      ],
+      name: 'Format selection that starts and ends on element and retain selection',
+    },
+    {
+      expectedHTML:
+        '<div contenteditable="true" style="user-select: text; white-space: pre-wrap; word-break: break-word;" data-lexical-editor="true">' +
+        '<p class="editor-paragraph"><br></p>' +
+        '<p class="editor-paragraph" dir="ltr">' +
+        '<strong class="editor-text-bold" data-lexical-text="true">Hello</strong>' +
+        '</p>' +
+        '<p class="editor-paragraph" dir="ltr">' +
+        '<strong class="editor-text-bold" data-lexical-text="true">world</strong>' +
+        '</p>' +
+        '<p class="editor-paragraph"><br></p>' +
+        '</div>',
+      expectedSelection: {
+        anchorOffset: 0,
+        anchorPath: [0],
+        focusOffset: 0,
+        focusPath: [3],
+      },
+      inputs: [
+        insertParagraph(),
+        insertText('Hello'),
+        insertParagraph(),
+        insertText('world'),
+        insertParagraph(),
+        moveNativeSelection([0], 0, [3], 0),
+        formatBold(),
+      ],
+      name: 'Format multiline text selection that starts and ends on element and retain selection',
+    },
+    {
+      expectedHTML:
+        '<div contenteditable="true" style="user-select: text; white-space: pre-wrap; word-break: break-word;" data-lexical-editor="true">' +
+        '<p class="editor-paragraph" dir="ltr">' +
+        '<span data-lexical-text="true">He</span>' +
+        '<strong class="editor-text-bold" data-lexical-text="true">llo</strong>' +
+        '</p>' +
+        '<p class="editor-paragraph" dir="ltr">' +
+        '<strong class="editor-text-bold" data-lexical-text="true">wo</strong>' +
+        '<span data-lexical-text="true">rld</span>' +
+        '</p>' +
+        '</div>',
+      expectedSelection: {
+        anchorOffset: 0,
+        anchorPath: [0, 1, 0],
+        focusOffset: 2,
+        focusPath: [1, 0, 0],
+      },
+      inputs: [
+        insertText('Hello'),
+        insertParagraph(),
+        insertText('world'),
+        moveNativeSelection([0, 0, 0], 2, [1, 0, 0], 2),
+        formatBold(),
+      ],
+      name: 'Format multiline text selection that starts and ends within text',
+    },
+    {
+      expectedHTML:
+        '<div contenteditable="true" style="user-select: text; white-space: pre-wrap; word-break: break-word;" data-lexical-editor="true">' +
+        '<p class="editor-paragraph"><br></p>' +
+        '<p class="editor-paragraph" dir="ltr">' +
+        '<span data-lexical-text="true">Hello </span>' +
+        '<strong class="editor-text-bold" data-lexical-text="true">world</strong>' +
+        '</p>' +
+        '<p class="editor-paragraph"><br></p>' +
+        '</div>',
+      expectedSelection: {
+        anchorOffset: 0,
+        anchorPath: [1, 1, 0],
+        focusOffset: 0,
+        focusPath: [2],
+      },
+      inputs: [
+        insertParagraph(),
+        insertText('Hello world'),
+        insertParagraph(),
+        moveNativeSelection([1, 0, 0], 6, [2], 0),
+        formatBold(),
+      ],
+      name: 'Format selection that starts on text and ends on element and retain selection',
+    },
+    {
+      expectedHTML:
+        '<div contenteditable="true" style="user-select: text; white-space: pre-wrap; word-break: break-word;" data-lexical-editor="true">' +
+        '<p class="editor-paragraph"><br></p>' +
+        '<p class="editor-paragraph" dir="ltr">' +
+        '<strong class="editor-text-bold" data-lexical-text="true">Hello</strong>' +
+        '<span data-lexical-text="true"> world</span>' +
+        '</p>' +
+        '<p class="editor-paragraph"><br></p>' +
+        '</div>',
+      expectedSelection: {
+        anchorOffset: 0,
+        anchorPath: [0],
+        focusOffset: 5,
+        focusPath: [1, 0, 0],
+      },
+      inputs: [
+        insertParagraph(),
+        insertText('Hello world'),
+        insertParagraph(),
+        moveNativeSelection([0], 0, [1, 0, 0], 5),
+        formatBold(),
+      ],
+      name: 'Format selection that starts on element and ends on text and retain selection',
     },
     // Tests need fixing:
     // ...GRAPHEME_SCENARIOS.flatMap(({description, grapheme}) => [
@@ -1567,48 +1699,37 @@ describe('LexicalSelection tests', () => {
     });
   });
 
-  describe('Testing that $getStyleObjectFromRawCSS handles unformatted css text ', () => {
+  describe('Selection correctly resolves to a sibling ElementNode when a selected node child is removed', () => {
     test('', async () => {
-      const testEditor = createTestEditor();
-      const element = document.createElement('div');
-      testEditor.setRootElement(element);
+      await ReactTestUtils.act(async () => {
+        let paragraphNodeKey;
+        await editor.update(() => {
+          const root = $getRoot();
 
-      await testEditor.update(() => {
-        const root = $getRoot();
-        const paragraph = $createParagraphNode();
-        const textNode = $createTextNode('Hello, World!');
-        textNode.setStyle('   color    :   red   ;top     : 50px');
-        $addNodeStyle(textNode);
-        paragraph.append(textNode);
-        root.append(paragraph);
+          const paragraphNode = $createParagraphNode();
+          paragraphNodeKey = paragraphNode.__key;
+          const listNode = $createListNode('number');
+          const listItemNode1 = $createListItemNode();
+          const textNode1 = $createTextNode('foo');
+          const listItemNode2 = $createListItemNode();
+          const listNode2 = $createListNode('number');
+          const listItemNode2x1 = $createListItemNode();
 
-        const selection = $createRangeSelection();
-        $setSelection(selection);
-        selection.insertParagraph();
-        setAnchorPoint({
-          key: textNode.getKey(),
-          offset: 0,
-          type: 'text',
+          listNode.append(listItemNode1, listItemNode2);
+          listItemNode1.append(textNode1);
+          listItemNode2.append(listNode2);
+          listNode2.append(listItemNode2x1);
+          root.append(paragraphNode, listNode);
+
+          listItemNode2.select();
+
+          listNode.remove();
         });
-
-        setFocusPoint({
-          key: textNode.getKey(),
-          offset: 10,
-          type: 'text',
+        await editor.getEditorState().read(() => {
+          const selection = $assertRangeSelection($getSelection());
+          expect(selection.anchor.key).toBe(paragraphNodeKey);
+          expect(selection.focus.key).toBe(paragraphNodeKey);
         });
-
-        const cssColorValue = $getSelectionStyleValueForProperty(
-          selection,
-          'color',
-          '',
-        );
-        expect(cssColorValue).toBe('red');
-        const cssTopValue = $getSelectionStyleValueForProperty(
-          selection,
-          'top',
-          '',
-        );
-        expect(cssTopValue).toBe('50px');
       });
     });
   });
@@ -2015,6 +2136,52 @@ describe('LexicalSelection tests', () => {
           expect(selection.focus.key).toBe(key);
           expect(selection.focus.offset).toBe(offset);
         });
+      });
+    });
+  });
+
+  describe('Testing that $getStyleObjectFromRawCSS handles unformatted css text ', () => {
+    test('', async () => {
+      const testEditor = createTestEditor();
+      const element = document.createElement('div');
+      testEditor.setRootElement(element);
+
+      await testEditor.update(() => {
+        const root = $getRoot();
+        const paragraph = $createParagraphNode();
+        const textNode = $createTextNode('Hello, World!');
+        textNode.setStyle('   color    :   red   ;top     : 50px');
+        $addNodeStyle(textNode);
+        paragraph.append(textNode);
+        root.append(paragraph);
+
+        const selection = $createRangeSelection();
+        $setSelection(selection);
+        selection.insertParagraph();
+        setAnchorPoint({
+          key: textNode.getKey(),
+          offset: 0,
+          type: 'text',
+        });
+
+        setFocusPoint({
+          key: textNode.getKey(),
+          offset: 10,
+          type: 'text',
+        });
+
+        const cssColorValue = $getSelectionStyleValueForProperty(
+          selection,
+          'color',
+          '',
+        );
+        expect(cssColorValue).toBe('red');
+        const cssTopValue = $getSelectionStyleValueForProperty(
+          selection,
+          'top',
+          '',
+        );
+        expect(cssTopValue).toBe('50px');
       });
     });
   });

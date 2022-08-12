@@ -32,11 +32,13 @@ import {useSharedHistoryContext} from './context/SharedHistoryContext';
 import {useEditorComposerContext} from './EditorComposerContext';
 import ActionsPlugin from './plugins/ActionsPlugin';
 import AutocompletePlugin from './plugins/AutocompletePlugin';
+import AutoEmbedPlugin from './plugins/AutoEmbedPlugin';
 import AutoLinkPlugin from './plugins/AutoLinkPlugin';
 import ClickableLinkPlugin from './plugins/ClickableLinkPlugin';
 import CodeActionMenuPlugin from './plugins/CodeActionMenuPlugin';
 import CodeHighlightPlugin from './plugins/CodeHighlightPlugin';
 import EmojisPlugin from './plugins/EmojisPlugin';
+import FigmaPlugin from './plugins/FigmaPlugin';
 import HorizontalRulePlugin from './plugins/HorizontalRulePlugin';
 import ImagesPlugin from './plugins/ImagesPlugin';
 import KeywordsPlugin from './plugins/KeywordsPlugin';
@@ -137,6 +139,7 @@ export default function Editor({
         {isMaxLength && <MaxLengthPlugin maxLength={30} />}
         <AutoFocusPlugin />
         <ClearEditorPlugin />
+        <AutoEmbedPlugin />
         <MentionsPlugin />
         <EmojisPlugin />
         <HashtagPlugin />
@@ -192,6 +195,7 @@ export default function Editor({
             <PollPlugin />
             <TwitterPlugin />
             <YouTubePlugin />
+            <FigmaPlugin />
             <ClickableLinkPlugin />
             <HorizontalRulePlugin />
             <TextFormatFloatingToolbarPlugin config={normToolbarConfig} />
@@ -216,9 +220,7 @@ export default function Editor({
         )}
         {isAutocomplete && <AutocompletePlugin />}
         <ActionsPlugin isRichText={isRichText} />
-        <div className="toc">
-          {showTableOfContents && <TableOfContentsPlugin />}
-        </div>
+        <div>{showTableOfContents && <TableOfContentsPlugin />}</div>
       </div>
       {showTreeView && <TreeViewPlugin />}
     </div>

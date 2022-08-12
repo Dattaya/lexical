@@ -156,7 +156,10 @@ export type RootListener = (
 
 export type TextContentListener = (text: string) => void;
 
-export type MutationListener = (nodes: Map<NodeKey, NodeMutation>) => void;
+export type MutationListener = (
+  nodes: Map<NodeKey, NodeMutation>,
+  payload: {updateTags: Set<string>; dirtyLeaves: Set<string>},
+) => void;
 
 export type CommandListener<P> = (payload: P, editor: LexicalEditor) => boolean;
 
@@ -489,7 +492,7 @@ export class LexicalEditor {
     // React node decorators for portals
     this._decorators = {};
     this._pendingDecorators = null;
-    // Used to optimize reconcilation
+    // Used to optimize reconciliation
     this._dirtyType = NO_DIRTY_NODES;
     this._cloneNotNeeded = new Set();
     this._dirtyLeaves = new Set();
