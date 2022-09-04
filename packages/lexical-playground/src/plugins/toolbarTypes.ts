@@ -1,3 +1,4 @@
+/* eslint-disable header/header */
 type SelectOptions = [string, string][];
 
 export type ToolbarConfig = {

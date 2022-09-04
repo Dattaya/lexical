@@ -13,7 +13,7 @@ import {
   $getSelection,
   $isRangeSelection,
   $isTextNode,
-  COMMAND_PRIORITY_LOW,
+  COMMAND_PRIORITY_NORMAL,
   KEY_ARROW_DOWN_COMMAND,
   KEY_ARROW_UP_COMMAND,
   KEY_ENTER_COMMAND,
@@ -65,7 +65,7 @@ export class TypeaheadOption {
   }
 }
 
-declare type MenuRenderFn<TOption extends TypeaheadOption> = (
+export type MenuRenderFn<TOption extends TypeaheadOption> = (
   anchorElement: HTMLElement | null,
   itemProps: {
     selectedIndex: number | null;
@@ -320,7 +320,7 @@ function LexicalPopoverMenu<TOption extends TypeaheadOption>({
           }
           return true;
         },
-        COMMAND_PRIORITY_LOW,
+        COMMAND_PRIORITY_NORMAL,
       ),
       editor.registerCommand<KeyboardEvent>(
         KEY_ARROW_UP_COMMAND,
@@ -339,7 +339,7 @@ function LexicalPopoverMenu<TOption extends TypeaheadOption>({
           }
           return true;
         },
-        COMMAND_PRIORITY_LOW,
+        COMMAND_PRIORITY_NORMAL,
       ),
       editor.registerCommand<KeyboardEvent>(
         KEY_ESCAPE_COMMAND,
@@ -350,7 +350,7 @@ function LexicalPopoverMenu<TOption extends TypeaheadOption>({
           close();
           return true;
         },
-        COMMAND_PRIORITY_LOW,
+        COMMAND_PRIORITY_NORMAL,
       ),
       editor.registerCommand<KeyboardEvent>(
         KEY_TAB_COMMAND,
@@ -368,7 +368,7 @@ function LexicalPopoverMenu<TOption extends TypeaheadOption>({
           selectOptionAndCleanUp(options[selectedIndex]);
           return true;
         },
-        COMMAND_PRIORITY_LOW,
+        COMMAND_PRIORITY_NORMAL,
       ),
       editor.registerCommand(
         KEY_ENTER_COMMAND,
@@ -387,7 +387,7 @@ function LexicalPopoverMenu<TOption extends TypeaheadOption>({
           selectOptionAndCleanUp(options[selectedIndex]);
           return true;
         },
-        COMMAND_PRIORITY_LOW,
+        COMMAND_PRIORITY_NORMAL,
       ),
     );
   }, [
@@ -452,9 +452,8 @@ export function useBasicTypeaheadTriggerMatch(
   );
 }
 
-function useAnchorElementRef<TOption extends TypeaheadOption>(
+function useAnchorElementRef(
   resolution: Resolution | null,
-  options: Array<TOption>,
 ): MutableRefObject<HTMLElement> {
   const [editor] = useLexicalComposerContext();
   const anchorElementRef = useRef<HTMLElement>(document.createElement('div'));
@@ -467,9 +466,9 @@ function useAnchorElementRef<TOption extends TypeaheadOption>(
       containerDiv.setAttribute('id', 'typeahead-menu');
       containerDiv.setAttribute('role', 'listbox');
       if (rootElement !== null && resolution !== null) {
-        const {left, top, height, width} = resolution.getRect();
-        containerDiv.style.top = `${top + height + window.pageYOffset}px`;
-        containerDiv.style.left = `${left + width + window.pageXOffset}px`;
+        const {left, top, height} = resolution.getRect();
+        containerDiv.style.top = `${top + height + 5 + window.pageYOffset}px`;
+        containerDiv.style.left = `${left + window.pageXOffset}px`;
         containerDiv.style.display = 'block';
         containerDiv.style.position = 'absolute';
         if (!containerDiv.isConnected) {
@@ -490,12 +489,12 @@ function useAnchorElementRef<TOption extends TypeaheadOption>(
         }
       };
     }
-  }, [editor, resolution, options]);
+  }, [editor, resolution]);
 
   return anchorElementRef;
 }
 
-type TypeaheadMenuPluginArgs<TOption extends TypeaheadOption> = {
+export type TypeaheadMenuPluginArgs<TOption extends TypeaheadOption> = {
   onQueryChange: (matchingString: string | null) => void;
   onSelectOption: (
     option: TOption,
@@ -508,7 +507,10 @@ type TypeaheadMenuPluginArgs<TOption extends TypeaheadOption> = {
   triggerFn: TriggerFn;
 };
 
-type TriggerFn = (text: string, editor: LexicalEditor) => QueryMatch | null;
+export type TriggerFn = (
+  text: string,
+  editor: LexicalEditor,
+) => QueryMatch | null;
 
 export function LexicalTypeaheadMenuPlugin<TOption extends TypeaheadOption>({
   options,
@@ -519,7 +521,7 @@ export function LexicalTypeaheadMenuPlugin<TOption extends TypeaheadOption>({
 }: TypeaheadMenuPluginArgs<TOption>): JSX.Element | null {
   const [editor] = useLexicalComposerContext();
   const [resolution, setResolution] = useState<Resolution | null>(null);
-  const anchorElementRef = useAnchorElementRef(resolution, options);
+  const anchorElementRef = useAnchorElementRef(resolution);
 
   useEffect(() => {
     let activeRange: Range | null = document.createRange();
@@ -613,7 +615,7 @@ export function LexicalNodeMenuPlugin<TOption extends TypeaheadOption>({
   const [editor] = useLexicalComposerContext();
 
   const [resolution, setResolution] = useState<Resolution | null>(null);
-  const anchorElementRef = useAnchorElementRef(resolution, options);
+  const anchorElementRef = useAnchorElementRef(resolution);
 
   useEffect(() => {
     if (nodeKey && resolution == null) {

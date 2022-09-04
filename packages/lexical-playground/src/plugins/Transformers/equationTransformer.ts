@@ -7,9 +7,14 @@
  */
 import type {TextMatchTransformer} from '@lexical/markdown';
 
-import {$createEquationNode, $isEquationNode} from '../../nodes/EquationNode';
+import {
+  $createEquationNode,
+  $isEquationNode,
+  EquationNode,
+} from '../../nodes/EquationNode';
 
 export const EQUATION: TextMatchTransformer = {
+  dependencies: [EquationNode],
   export: (node, exportChildren, exportFormat) => {
     if (!$isEquationNode(node)) {
       return null;

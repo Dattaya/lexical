@@ -1,3 +1,4 @@
+/** @module @lexical/text */
 /**
  * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
@@ -210,10 +211,10 @@ export function $rootTextContent(): string {
 
 export function $canShowPlaceholder(
   isComposing: boolean,
-  // TODO 0.4 make mandatory
-  isReadOnly = false,
+  // TODO 0.5 make mandatory
+  isEditable = true,
 ): boolean {
-  if (isReadOnly || !$isRootTextContentEmpty(isComposing, false)) {
+  if (!isEditable || !$isRootTextContentEmpty(isComposing, false)) {
     return false;
   }
 
@@ -255,10 +256,10 @@ export function $canShowPlaceholder(
 
 export function $canShowPlaceholderCurry(
   isEditorComposing: boolean,
-  // TODO 0.4 make mandatory
-  isReadOnly = false,
+  // TODO 0.5 make mandatory
+  isEditable = true,
 ): () => boolean {
-  return () => $canShowPlaceholder(isEditorComposing, isReadOnly);
+  return () => $canShowPlaceholder(isEditorComposing, isEditable);
 }
 
 export type EntityMatch = {end: number; start: number};

@@ -13,58 +13,24 @@ import type {
   DOMExportOutput,
   EditorConfig,
   EditorThemeClasses,
-  GridSelection,
   LexicalEditor,
   LexicalNode,
   NodeKey,
-  NodeSelection,
-  RangeSelection,
   SerializedEditor,
   SerializedLexicalNode,
   Spread,
 } from 'lexical';
 
-import './ImageNode.css';
-
-import {useCollaborationContext} from '@lexical/react/LexicalCollaborationContext';
-import {CollaborationPlugin} from '@lexical/react/LexicalCollaborationPlugin';
-import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
-import {HashtagPlugin} from '@lexical/react/LexicalHashtagPlugin';
-import {HistoryPlugin} from '@lexical/react/LexicalHistoryPlugin';
-import {LinkPlugin} from '@lexical/react/LexicalLinkPlugin';
-import {LexicalNestedComposer} from '@lexical/react/LexicalNestedComposer';
-import {RichTextPlugin} from '@lexical/react/LexicalRichTextPlugin';
-import {TablePlugin} from '@lexical/react/LexicalTablePlugin';
-import {useLexicalNodeSelection} from '@lexical/react/useLexicalNodeSelection';
-import {mergeRegister} from '@lexical/utils';
-import {
-  $getNodeByKey,
-  $getSelection,
-  $isNodeSelection,
-  CLICK_COMMAND,
-  COMMAND_PRIORITY_LOW,
-  createEditor,
-  DecoratorNode,
-  KEY_BACKSPACE_COMMAND,
-  KEY_DELETE_COMMAND,
-} from 'lexical';
+import {createEditor, DecoratorNode} from 'lexical';
 import * as React from 'react';
-import {Suspense, useCallback, useEffect, useRef, useState} from 'react';
+import {Suspense} from 'react';
 
-import {createWebsocketProvider} from '../collaboration';
-import {useSettings} from '../context/SettingsContext';
-import {useSharedHistoryContext} from '../context/SharedHistoryContext';
-import EmojisPlugin from '../plugins/EmojisPlugin';
-import ImagesPlugin from '../plugins/ImagesPlugin';
-import KeywordsPlugin from '../plugins/KeywordsPlugin';
-import MentionsPlugin from '../plugins/MentionsPlugin';
-import TableCellActionMenuPlugin from '../plugins/TableActionMenuPlugin';
-import TreeViewPlugin from '../plugins/TreeViewPlugin';
-import ContentEditable from '../ui/ContentEditable';
-import ImageResizer from '../ui/ImageResizer';
-import Placeholder from '../ui/Placeholder';
 import joinClasses from '../utils/join-classes';
 
+const ImageComponent = React.lazy(
+  // @ts-ignore
+  () => import('./ImageComponent'),
+);
 export interface ImagePayload {
   altText: string;
   caption?: LexicalEditor;
@@ -77,21 +43,6 @@ export interface ImagePayload {
   align?: ImageAlign;
 }
 
-const imageCache = new Set();
-
-function useSuspenseImage(src: string) {
-  if (!imageCache.has(src)) {
-    throw new Promise((resolve) => {
-      const img = new Image();
-      img.src = src;
-      img.onload = () => {
-        imageCache.add(src);
-        resolve(null);
-      };
-    });
-  }
-}
-
 function convertImageElement(domNode: Node): null | DOMConversionOutput {
   if (domNode instanceof HTMLImageElement) {
     const {alt: altText, src} = domNode;
@@ -99,250 +50,6 @@ function convertImageElement(domNode: Node): null | DOMConversionOutput {
     return {node};
   }
   return null;
-}
-
-function LazyImage({
-  altText,
-  className,
-  imageRef,
-  src,
-  width,
-  height,
-  maxWidth,
-}: {
-  altText: string;
-  className: string | null;
-  height: 'inherit' | number;
-  imageRef: {current: null | HTMLImageElement};
-  maxWidth: number;
-  src: string;
-  width: 'inherit' | number;
-}): JSX.Element {
-  useSuspenseImage(src);
-  return (
-    <img
-      className={className || undefined}
-      src={src}
-      alt={altText}
-      ref={imageRef}
-      style={{
-        height,
-        maxWidth,
-        width,
-      }}
-      draggable="false"
-    />
-  );
-}
-
-function ImageComponent({
-  src,
-  altText,
-  nodeKey,
-  width,
-  height,
-  maxWidth,
-  resizable,
-  showCaption,
-  caption,
-  align,
-}: {
-  altText: string;
-  caption: LexicalEditor;
-  height: 'inherit' | number;
-  maxWidth: number;
-  nodeKey: NodeKey;
-  resizable: boolean;
-  showCaption: boolean;
-  src: string;
-  width: 'inherit' | number;
-  align?: ImageAlign;
-}): JSX.Element {
-  const ref = useRef(null);
-  const [isSelected, setSelected, clearSelection] =
-    useLexicalNodeSelection(nodeKey);
-  const [isResizing, setIsResizing] = useState<boolean>(false);
-  const {isCollabActive} = useCollaborationContext();
-  const [editor] = useLexicalComposerContext();
-  const [selection, setSelection] = useState<
-    RangeSelection | NodeSelection | GridSelection | null
-  >(null);
-
-  const onDelete = useCallback(
-    (payload: KeyboardEvent) => {
-      if (isSelected && $isNodeSelection($getSelection())) {
-        const event: KeyboardEvent = payload;
-        event.preventDefault();
-        const node = $getNodeByKey(nodeKey);
-        if ($isImageNode(node)) {
-          node.remove();
-        }
-        setSelected(false);
-      }
-      return false;
-    },
-    [isSelected, nodeKey, setSelected],
-  );
-
-  useEffect(() => {
-    return mergeRegister(
-      editor.registerUpdateListener(({editorState}) => {
-        setSelection(editorState.read(() => $getSelection()));
-      }),
-      editor.registerCommand<MouseEvent>(
-        CLICK_COMMAND,
-        (payload) => {
-          const event = payload;
-
-          if (isResizing) {
-            return true;
-          }
-          if (event.target === ref.current) {
-            if (!event.shiftKey) {
-              clearSelection();
-            }
-            setSelected(!isSelected);
-            return true;
-          }
-
-          return false;
-        },
-        COMMAND_PRIORITY_LOW,
-      ),
-      editor.registerCommand(
-        KEY_DELETE_COMMAND,
-        onDelete,
-        COMMAND_PRIORITY_LOW,
-      ),
-      editor.registerCommand(
-        KEY_BACKSPACE_COMMAND,
-        onDelete,
-        COMMAND_PRIORITY_LOW,
-      ),
-    );
-  }, [
-    clearSelection,
-    editor,
-    isResizing,
-    isSelected,
-    nodeKey,
-    onDelete,
-    setSelected,
-  ]);
-
-  const setShowCaption = () => {
-    editor.update(() => {
-      const node = $getNodeByKey(nodeKey);
-      if ($isImageNode(node)) {
-        node.setShowCaption(true);
-      }
-    });
-  };
-
-  const setAlign = (newAlign?: ImageAlign) => {
-    editor.update(() => {
-      const node = $getNodeByKey(nodeKey);
-      if ($isImageNode(node)) {
-        node.setAlign(newAlign);
-      }
-    });
-  };
-
-  const onResizeEnd = (
-    nextWidth: 'inherit' | number,
-    nextHeight: 'inherit' | number,
-  ) => {
-    // Delay hiding the resize bars for click case
-    setTimeout(() => {
-      setIsResizing(false);
-    }, 200);
-
-    editor.update(() => {
-      const node = $getNodeByKey(nodeKey);
-      if ($isImageNode(node)) {
-        node.setWidthAndHeight(nextWidth, nextHeight);
-      }
-    });
-  };
-
-  const onResizeStart = () => {
-    setIsResizing(true);
-  };
-
-  const {historyState} = useSharedHistoryContext();
-  const {
-    settings: {showNestedEditorTreeView},
-  } = useSettings();
-
-  const draggable = isSelected && $isNodeSelection(selection);
-  const isFocused = $isNodeSelection(selection) && (isSelected || isResizing);
-
-  return (
-    <Suspense fallback={null}>
-      <>
-        <div draggable={draggable}>
-          <LazyImage
-            className={isFocused ? 'focused' : null}
-            src={src}
-            altText={altText}
-            imageRef={ref}
-            width={width}
-            height={height}
-            maxWidth={maxWidth}
-          />
-        </div>
-        {showCaption && (
-          <div className="image-caption-container">
-            <LexicalNestedComposer initialEditor={caption}>
-              <MentionsPlugin />
-              <TablePlugin />
-              <TableCellActionMenuPlugin />
-              <ImagesPlugin />
-              <LinkPlugin />
-              <EmojisPlugin />
-              <HashtagPlugin />
-              <KeywordsPlugin />
-              {isCollabActive ? (
-                <CollaborationPlugin
-                  id={caption.getKey()}
-                  providerFactory={createWebsocketProvider}
-                  shouldBootstrap={true}
-                />
-              ) : (
-                <HistoryPlugin externalHistoryState={historyState} />
-              )}
-              <RichTextPlugin
-                contentEditable={
-                  <ContentEditable className="ImageNode__contentEditable" />
-                }
-                placeholder={
-                  <Placeholder className="ImageNode__placeholder">
-                    Enter a caption...
-                  </Placeholder>
-                }
-                // TODO Remove after it's inherited from the parent (LexicalComposer)
-                initialEditorState={null}
-              />
-              {showNestedEditorTreeView === true ? <TreeViewPlugin /> : null}
-            </LexicalNestedComposer>
-          </div>
-        )}
-        {resizable && isFocused && (
-          <ImageResizer
-            showCaption={showCaption}
-            setShowCaption={setShowCaption}
-            align={align}
-            setAlign={setAlign}
-            editor={editor}
-            imageRef={ref}
-            maxWidth={maxWidth}
-            onResizeStart={onResizeStart}
-            onResizeEnd={onResizeEnd}
-          />
-        )}
-      </>
-    </Suspense>
-  );
 }
 
 export type SerializedImageNode = Spread<
@@ -522,18 +229,20 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
 
   decorate(): JSX.Element {
     return (
-      <ImageComponent
-        src={this.__src}
-        altText={this.__altText}
-        width={this.__width}
-        height={this.__height}
-        maxWidth={this.__maxWidth}
-        nodeKey={this.getKey()}
-        showCaption={this.__showCaption}
-        caption={this.__caption}
-        align={this.__align}
-        resizable={true}
-      />
+      <Suspense fallback={null}>
+        <ImageComponent
+          src={this.__src}
+          altText={this.__altText}
+          width={this.__width}
+          height={this.__height}
+          maxWidth={this.__maxWidth}
+          nodeKey={this.getKey()}
+          showCaption={this.__showCaption}
+          caption={this.__caption}
+          align={this.__align}
+          resizable={true}
+        />
+      </Suspense>
     );
   }
 }

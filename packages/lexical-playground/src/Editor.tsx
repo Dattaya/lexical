@@ -25,7 +25,7 @@ import {PlainTextPlugin} from '@lexical/react/LexicalPlainTextPlugin';
 import {RichTextPlugin} from '@lexical/react/LexicalRichTextPlugin';
 import {TablePlugin} from '@lexical/react/LexicalTablePlugin';
 import * as React from 'react';
-import {useMemo, useRef} from 'react';
+import {useMemo, useRef, useState} from 'react';
 
 import {createWebsocketProvider} from './collaboration';
 import {useSharedHistoryContext} from './context/SharedHistoryContext';
@@ -39,6 +39,8 @@ import CodeActionMenuPlugin from './plugins/CodeActionMenuPlugin';
 import CodeHighlightPlugin from './plugins/CodeHighlightPlugin';
 import EmojisPlugin from './plugins/EmojisPlugin';
 import FigmaPlugin from './plugins/FigmaPlugin';
+import FloatingLinkEditorPlugin from './plugins/FloatingLinkEditorPlugin';
+import FloatingTextFormatToolbarPlugin from './plugins/FloatingTextFormatToolbarPlugin';
 import HorizontalRulePlugin from './plugins/HorizontalRulePlugin';
 import ImagesPlugin from './plugins/ImagesPlugin';
 import KeywordsPlugin from './plugins/KeywordsPlugin';
@@ -52,7 +54,6 @@ import TabFocusPlugin from './plugins/TabFocusPlugin';
 import TableCellActionMenuPlugin from './plugins/TableActionMenuPlugin';
 import TableCellResizer from './plugins/TableCellResizer';
 import TableOfContentsPlugin from './plugins/TableOfContentsPlugin';
-import TextFormatFloatingToolbarPlugin from './plugins/TextFormatFloatingToolbarPlugin';
 import ToolbarPlugin, {ToolbarPluginProps} from './plugins/ToolbarPlugin';
 import TreeViewPlugin from './plugins/TreeViewPlugin';
 import TwitterPlugin from './plugins/TwitterPlugin';
@@ -119,6 +120,16 @@ export default function Editor({
     : 'Enter some plain text...';
   const placeholder = <Placeholder>{text}</Placeholder>;
   const scrollRef = useRef(null);
+
+  const [floatingAnchorElem, setFloatingAnchorElem] =
+    useState<HTMLDivElement | null>(null);
+
+  const onRef = (_floatingAnchorElem: HTMLDivElement) => {
+    if (_floatingAnchorElem !== null) {
+      setFloatingAnchorElem(_floatingAnchorElem);
+    }
+  };
+
   const editorContext = useEditorComposerContext();
 
   const normToolbarConfig = useMemo(
@@ -176,19 +187,23 @@ export default function Editor({
               <HistoryPlugin externalHistoryState={historyState} />
             )}
             <RichTextPlugin
-              contentEditable={<ContentEditable />}
+              contentEditable={
+                <div className="editor-scroller">
+                  <div className="editor" ref={onRef}>
+                    <ContentEditable />
+                  </div>
+                </div>
+              }
               placeholder={placeholder}
               // TODO Collab support until 0.4
               initialEditorState={isCollab ? null : undefined}
             />
             <MarkdownShortcutPlugin />
-            <CodeActionMenuPlugin />
             <CodeHighlightPlugin />
             <ListPlugin />
             <CheckListPlugin />
             <ListMaxIndentLevelPlugin maxDepth={7} />
             <TablePlugin />
-            <TableCellActionMenuPlugin />
             <TableCellResizer />
             <ImagesPlugin />
             <LinkPlugin />
@@ -198,8 +213,18 @@ export default function Editor({
             <FigmaPlugin />
             <ClickableLinkPlugin />
             <HorizontalRulePlugin />
-            <TextFormatFloatingToolbarPlugin config={normToolbarConfig} />
             <TabFocusPlugin />
+            {floatingAnchorElem && (
+              <>
+                <CodeActionMenuPlugin anchorElem={floatingAnchorElem} />
+                <TableCellActionMenuPlugin anchorElem={floatingAnchorElem} />
+                <FloatingLinkEditorPlugin anchorElem={floatingAnchorElem} />
+                <FloatingTextFormatToolbarPlugin
+                  anchorElem={floatingAnchorElem}
+                  config={normToolbarConfig}
+                />
+              </>
+            )}
             {editorContext.extensions.plugins.map(([extName, Plugin]) => (
               <Plugin key={extName} />
             ))}
@@ -219,8 +244,11 @@ export default function Editor({
           <CharacterLimitPlugin charset={isCharLimit ? 'UTF-16' : 'UTF-8'} />
         )}
         {isAutocomplete && <AutocompletePlugin />}
-        <ActionsPlugin isRichText={isRichText} />
         <div>{showTableOfContents && <TableOfContentsPlugin />}</div>
+        <div className="toc">
+          {showTableOfContents && <TableOfContentsPlugin />}
+        </div>
+        <ActionsPlugin isRichText={isRichText} />
       </div>
       {showTreeView && <TreeViewPlugin />}
     </div>

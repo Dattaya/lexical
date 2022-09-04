@@ -29,6 +29,7 @@ import {
   $isLineBreakNode,
   $isRootNode,
   $isTextNode,
+  $setSelection,
   DecoratorNode,
   GridCellNode,
   GridNode,
@@ -1355,13 +1356,18 @@ export class RangeSelection implements BaseSelection {
       } else if (
         !$isElementNode(node) ||
         ($isElementNode(node) && node.isInline()) ||
-        ($isDecoratorNode(target) && target.isTopLevel()) ||
-        $isLineBreakNode(target)
+        ($isDecoratorNode(target) && target.isTopLevel())
       ) {
         lastNode = node;
         target = target.insertAfter(node);
       } else {
-        target = node.getParentOrThrow();
+        const nextTarget: ElementNode = target.getParentOrThrow();
+        // if we're inserting an Element after a LineBreak, we want to move the target to the parent
+        // and remove the LineBreak so we don't have empty space.
+        if ($isLineBreakNode(target)) {
+          target.remove();
+        }
+        target = nextTarget;
         // Re-try again with the target being the parent
         i--;
         continue;
@@ -1388,6 +1394,8 @@ export class RangeSelection implements BaseSelection {
       // then we should attempt to move selection to that.
       const lastChild = $isTextNode(lastNode)
         ? lastNode
+        : $isElementNode(lastNode) && lastNode.isInline()
+        ? lastNode.getLastDescendant()
         : target.getLastDescendant();
       if (!selectStart) {
         // Handle moving selection to end for elements
@@ -1647,6 +1655,14 @@ export class RangeSelection implements BaseSelection {
     // Handle the selection movement around decorators.
     const possibleNode = $getDecoratorNode(focus, isBackward);
     if ($isDecoratorNode(possibleNode) && !possibleNode.isIsolated()) {
+      // Make it possible to move selection from range selection to
+      // node selection on the node.
+      if (collapse) {
+        const nodeSelection = $createNodeSelection();
+        nodeSelection.add(possibleNode.__key);
+        $setSelection(nodeSelection);
+        return;
+      }
       const sibling = isBackward
         ? possibleNode.getPreviousSibling()
         : possibleNode.getNextSibling();
@@ -2265,6 +2281,10 @@ export function internalCreateRangeSelection(
   domSelection: Selection | null,
   editor: LexicalEditor,
 ): null | RangeSelection {
+  const windowObj = editor._window;
+  if (windowObj === null) {
+    return null;
+  }
   // When we create a selection, we try to use the previous
   // selection where possible, unless an actual user selection
   // change has occurred. When we do need to create a new selection
@@ -2279,7 +2299,7 @@ export function internalCreateRangeSelection(
   // reconciliation unless there are dirty nodes that need
   // reconciling.
 
-  const windowEvent = window.event;
+  const windowEvent = windowObj.event;
   const eventType = windowEvent ? windowEvent.type : undefined;
   const isSelectionChange = eventType === 'selectionchange';
   const useDOMSelection =

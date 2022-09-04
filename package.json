@@ -1,7 +1,7 @@
 {
   "name": "@lexical/monorepo",
   "description": "Lexical is an extensible text editor framework that provides excellent reliability, accessibility and performance.",
-  "version": "0.3.11",
+  "version": "0.4.0",
   "license": "MIT",
   "private": true,
   "workspaces": [
@@ -14,7 +14,7 @@
   "engineStrict": true,
   "scripts": {
     "start": "cross-env NODE_ENV=development concurrently \"npm:collab\" \"npm run dev --prefix packages/lexical-playground\"",
-    "start:website": "npm run start --prefix packages/lexical-website-new -- --port 3001",
+    "start:website": "npm run start --prefix packages/lexical-website -- --port 3001",
     "start:playground": "npm run start-test-server",
     "dev": "npm run dev --prefix packages/lexical-playground",
     "start-test-server": "npm run preview --prefix packages/lexical-playground -- --port 4000",
@@ -29,6 +29,7 @@
     "tsc": "tsc",
     "tsc-watch": "tsc -w",
     "collab": "cross-env HOST=localhost PORT=1234 npx y-websocket-server",
+    "validation": "npx ts-node --cwdMode packages/lexical-playground/src/server/validation.ts",
     "test-unit": "jest --selectProjects unit --testPathPattern",
     "test-unit-watch": "npm run test-unit -- --watch --coverage=''",
     "test-e2e-chromium": "cross-env E2E_BROWSER=chromium playwright test --project=\"chromium\"",
@@ -155,6 +156,8 @@
     "rollup-plugin-terser": "^7.0.2",
     "tmp": "^0.2.1",
     "ts-jest": "^28.0.2",
+    "ts-node": "^10.9.1",
+    "typedoc": "^0.23.10",
     "typescript": "^4.6.4",
     "uuid": "^8.3.2"
   },

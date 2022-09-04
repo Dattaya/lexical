@@ -36,13 +36,51 @@ import {
   SUPPORT_SPEECH_RECOGNITION,
 } from '../SpeechToTextPlugin';
 
+async function sendEditorState(editor: LexicalEditor): Promise<void> {
+  const stringifiedEditorState = JSON.stringify(editor.getEditorState());
+  try {
+    await fetch('http://localhost:1235/setEditorState', {
+      body: stringifiedEditorState,
+      headers: {
+        Accept: 'application/json',
+        'Content-type': 'application/json',
+      },
+      method: 'POST',
+    });
+  } catch {
+    // NO-OP
+  }
+}
+
+async function validateEditorState(editor: LexicalEditor): Promise<void> {
+  const stringifiedEditorState = JSON.stringify(editor.getEditorState());
+  let response = null;
+  try {
+    response = await fetch('http://localhost:1235/validateEditorState', {
+      body: stringifiedEditorState,
+      headers: {
+        Accept: 'application/json',
+        'Content-type': 'application/json',
+      },
+      method: 'POST',
+    });
+  } catch {
+    // NO-OP
+  }
+  if (response !== null && response.status === 403) {
+    throw new Error(
+      'Editor state validation failed! Server did not accept changes.',
+    );
+  }
+}
+
 export default function ActionsPlugin({
   isRichText,
 }: {
   isRichText: boolean;
 }): JSX.Element {
   const [editor] = useLexicalComposerContext();
-  const [isReadOnly, setIsReadOnly] = useState(() => editor.isReadOnly());
+  const [isEditable, setIsEditable] = useState(() => editor.isEditable());
   const [isSpeechToText, setIsSpeechToText] = useState(false);
   const [connected, setConnected] = useState(false);
   const [isEditorEmpty, setIsEditorEmpty] = useState(true);
@@ -51,8 +89,8 @@ export default function ActionsPlugin({
 
   useEffect(() => {
     return mergeRegister(
-      editor.registerReadOnlyListener((readOnly) => {
-        setIsReadOnly(readOnly);
+      editor.registerEditableListener((editable) => {
+        setIsEditable(editable);
       }),
       editor.registerCommand<boolean>(
         CONNECTED_COMMAND,
@@ -67,24 +105,36 @@ export default function ActionsPlugin({
   }, [editor]);
 
   useEffect(() => {
-    return editor.registerUpdateListener(() => {
-      editor.getEditorState().read(() => {
-        const root = $getRoot();
-        const children = root.getChildren();
-
-        if (children.length > 1) {
-          setIsEditorEmpty(false);
-        } else {
-          if ($isParagraphNode(children[0])) {
-            const paragraphChildren = children[0].getChildren();
-            setIsEditorEmpty(paragraphChildren.length === 0);
-          } else {
-            setIsEditorEmpty(false);
-          }
+    return editor.registerUpdateListener(
+      ({dirtyElements, prevEditorState, tags}) => {
+        // If we are in read only mode, send the editor state
+        // to server and ask for validation if possible.
+        if (
+          !isEditable &&
+          dirtyElements.size > 0 &&
+          !tags.has('historic') &&
+          !tags.has('collaboration')
+        ) {
+          validateEditorState(editor);
         }
-      });
-    });
-  }, [editor]);
+        editor.getEditorState().read(() => {
+          const root = $getRoot();
+          const children = root.getChildren();
+
+          if (children.length > 1) {
+            setIsEditorEmpty(false);
+          } else {
+            if ($isParagraphNode(children[0])) {
+              const paragraphChildren = children[0].getChildren();
+              setIsEditorEmpty(paragraphChildren.length === 0);
+            } else {
+              setIsEditorEmpty(false);
+            }
+          }
+        });
+      },
+    );
+  }, [editor, isEditable]);
 
   const handleMarkdownToggle = useCallback(() => {
     editor.update(() => {
@@ -158,13 +208,17 @@ export default function ActionsPlugin({
         <i className="clear" />
       </button>
       <button
-        className={`action-button ${isReadOnly ? 'unlock' : 'lock'}`}
+        className={`action-button ${!isEditable ? 'unlock' : 'lock'}`}
         onClick={() => {
-          editor.setReadOnly(!editor.isReadOnly());
+          // Send latest editor state to commenting validation server
+          if (isEditable) {
+            sendEditorState(editor);
+          }
+          editor.setEditable(!editor.isEditable());
         }}
         title="Read-Only Mode"
-        aria-label={`${isReadOnly ? 'Unlock' : 'Lock'} read-only mode`}>
-        <i className={isReadOnly ? 'unlock' : 'lock'} />
+        aria-label={`${!isEditable ? 'Unlock' : 'Lock'} read-only mode`}>
+        <i className={!isEditable ? 'unlock' : 'lock'} />
       </button>
       <button
         className="action-button"

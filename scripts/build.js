@@ -280,6 +280,7 @@ ${source}`;
     file: outputFile,
     format: 'cjs', // change between es and cjs modules
     freeze: false,
+    inlineDynamicImports: true,
     interop: false,
   };
   const result = await rollup.rollup(inputOptions);

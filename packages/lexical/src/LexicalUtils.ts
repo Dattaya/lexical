@@ -101,7 +101,12 @@ export const scheduleMicroTask: (fn: () => void) => void =
         Promise.resolve().then(fn);
       };
 
-function isSelectionCapturedInDecoratorInput(anchorDOM: Node): boolean {
+export function $isSelectionCapturedInDecorator(node: Node): boolean {
+  return $isDecoratorNode($getNearestNodeFromDOMNode(node));
+}
+
+// TODO change to $ function
+export function isSelectionCapturedInDecoratorInput(anchorDOM: Node): boolean {
   const activeElement = document.activeElement;
   const nodeName = activeElement !== null ? activeElement.nodeName : null;
   return (
@@ -138,12 +143,11 @@ export function getNearestEditorFromDOMNode(
   while (currentNode != null) {
     // @ts-expect-error: internal field
     const editor: LexicalEditor = currentNode.__lexicalEditor;
-    if (editor != null && !editor.isReadOnly()) {
+    if (editor != null) {
       return editor;
     }
     currentNode = currentNode.parentNode;
   }
-
   return null;
 }
 
@@ -673,8 +677,8 @@ export function $shouldPreventDefaultAndInsertText(
     anchorKey !== focus.key ||
     // If we're working with a non-text node.
     !$isTextNode(anchorNode) ||
-    // If we are replacing a range with a single character, and not composing.
-    (textLength < 2 &&
+    // If we are replacing a range with a single character or grapheme, and not composing.
+    ((textLength < 2 || doesContainGrapheme(text)) &&
       anchor.offset !== focus.offset &&
       !anchorNode.isComposing()) ||
     // Any non standard text node.
@@ -1086,8 +1090,8 @@ export function $getDecoratorNode(
   return null;
 }
 
-export function isFirefoxClipboardEvents(): boolean {
-  const event = window.event;
+export function isFirefoxClipboardEvents(editor: LexicalEditor): boolean {
+  const event = getWindow(editor).event;
   const inputType = event && (event as InputEvent).inputType;
   return (
     inputType === 'insertFromPaste' ||
@@ -1143,7 +1147,7 @@ export function scrollIntoViewIfNeeded(
   if (element !== null) {
     const rect = element.getBoundingClientRect();
 
-    if (rect.bottom > window.innerHeight) {
+    if (rect.bottom > getWindow(editor).innerHeight) {
       element.scrollIntoView(false);
     } else if (rect.top < 0) {
       element.scrollIntoView();
@@ -1206,4 +1210,17 @@ function $hasAncestor(child: LexicalNode, targetNode: LexicalNode): boolean {
     parent = parent.getParent();
   }
   return false;
+}
+
+export function getDefaultView(domElem: HTMLElement): Window | null {
+  const ownerDoc = domElem.ownerDocument;
+  return (ownerDoc && ownerDoc.defaultView) || null;
+}
+
+export function getWindow(editor: LexicalEditor): Window {
+  const windowObj = editor._window;
+  if (windowObj === null) {
+    invariant(false, 'window object not found');
+  }
+  return windowObj;
 }

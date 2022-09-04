@@ -1,3 +1,4 @@
+/** @module lexical */
 /**
  * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
@@ -9,6 +10,7 @@
 export type {
   CommandListenerPriority,
   CommandPayloadType,
+  EditableListener,
   EditorConfig,
   EditorThemeClasses,
   IntentionallyMarkedAsDirtyElement,
@@ -17,7 +19,6 @@ export type {
   LexicalEditor,
   MutationListener,
   NodeMutation,
-  ReadOnlyListener,
   SerializedEditor,
   Spread,
 } from './LexicalEditor';
@@ -137,11 +138,13 @@ export {$isElementNode, ElementNode} from './nodes/LexicalElementNode';
 export {$isGridCellNode, GridCellNode} from './nodes/LexicalGridCellNode';
 export {$isGridNode, GridNode} from './nodes/LexicalGridNode';
 export {$isGridRowNode, GridRowNode} from './nodes/LexicalGridRowNode';
+export type {SerializedLineBreakNode} from './nodes/LexicalLineBreakNode';
 export {
   $createLineBreakNode,
   $isLineBreakNode,
   LineBreakNode,
 } from './nodes/LexicalLineBreakNode';
+export type {SerializedParagraphNode} from './nodes/LexicalParagraphNode';
 export {
   $createParagraphNode,
   $isParagraphNode,

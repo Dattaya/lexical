@@ -8,10 +8,12 @@
 
 import {
   moveToLineBeginning,
+  moveToPrevWord,
   pressShiftEnter,
 } from '../keyboardShortcuts/index.mjs';
 import {
   assertHTML,
+  assertSelection,
   click,
   evaluate,
   expect,
@@ -23,6 +25,7 @@ import {
   IS_MAC,
   keyDownCtrlOrMeta,
   keyUpCtrlOrMeta,
+  pasteFromClipboard,
   selectFromFormatDropdown,
   sleep,
   test,
@@ -125,16 +128,15 @@ test.describe('Selection', () => {
           class="PlaygroundEditorTheme__paragraph PlaygroundEditorTheme__ltr"
           dir="ltr">
           <span data-lexical-text="true">Line1</span>
-          <br />
-          <code
-            class="PlaygroundEditorTheme__code PlaygroundEditorTheme__ltr"
-            spellcheck="false"
-            dir="ltr"
-            data-highlight-language="javascript"
-            data-gutter="1">
-            <span data-lexical-text="true">Line2</span>
-          </code>
         </p>
+        <code
+          class="PlaygroundEditorTheme__code PlaygroundEditorTheme__ltr"
+          spellcheck="false"
+          dir="ltr"
+          data-highlight-language="javascript"
+          data-gutter="1">
+          <span data-lexical-text="true">Line2</span>
+        </code>
       `,
     );
   });
@@ -198,5 +200,25 @@ test.describe('Selection', () => {
         <p class="PlaygroundEditorTheme__paragraph"><br /></p>
       `,
     );
+  });
+
+  test('Can insert inline element within text and put selection after it', async ({
+    page,
+    isPlainText,
+  }) => {
+    test.skip(isPlainText);
+    await focusEditor(page);
+    await page.keyboard.type('Hello world');
+    await moveToPrevWord(page);
+    await pasteFromClipboard(page, {
+      'text/html': `<a href="https://test.com">link</a>`,
+    });
+    await sleep(3000);
+    await assertSelection(page, {
+      anchorOffset: 4,
+      anchorPath: [0, 1, 0, 0],
+      focusOffset: 4,
+      focusPath: [0, 1, 0, 0],
+    });
   });
 });

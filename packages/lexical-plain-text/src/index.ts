@@ -1,3 +1,4 @@
+/** @module @lexical/plain-text */
 /**
  * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
@@ -67,22 +68,20 @@ function onCopyForPlainText(
   event: CommandPayloadType<typeof COPY_COMMAND>,
   editor: LexicalEditor,
 ): void {
-  event.preventDefault();
   editor.update(() => {
     const clipboardData =
       event instanceof KeyboardEvent ? null : event.clipboardData;
     const selection = $getSelection();
 
-    if (selection !== null) {
-      if (clipboardData != null) {
-        const htmlString = $getHtmlContent(editor);
+    if (selection !== null && clipboardData != null) {
+      event.preventDefault();
+      const htmlString = $getHtmlContent(editor);
 
-        if (htmlString !== null) {
-          clipboardData.setData('text/html', htmlString);
-        }
-
-        clipboardData.setData('text/plain', selection.getTextContent());
+      if (htmlString !== null) {
+        clipboardData.setData('text/html', htmlString);
       }
+
+      clipboardData.setData('text/plain', selection.getTextContent());
     }
   });
 }

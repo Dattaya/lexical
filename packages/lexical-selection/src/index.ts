@@ -1,3 +1,4 @@
+/** @module @lexical/selection */
 /**
  * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
@@ -310,8 +311,8 @@ function getStyleObjectFromRawCSS(css: string): Record<string, string> {
 
   for (const style of styles) {
     if (style !== '') {
-      const patch = style.split(':');
-      styleObject[patch[0].trim()] = patch[1].trim();
+      const [key, value] = style.split(/:([^]+)/); // split on first colon
+      styleObject[key.trim()] = value.trim();
     }
   }
 
@@ -607,6 +608,8 @@ export function $wrapLeafNodesInElements(
         : anchor.getNode();
     const children = target.getChildren();
     let element = createElement();
+    element.setFormat(target.getFormatType());
+    element.setIndent(target.getIndent());
     children.forEach((child) => element.append(child));
 
     if (wrappingElement) {
@@ -681,6 +684,8 @@ export function $wrapLeafNodesInElements(
 
       if (elementMapping.get(parentKey) === undefined) {
         const targetElement = createElement();
+        targetElement.setFormat(parent.getFormatType());
+        targetElement.setIndent(parent.getIndent());
         elements.push(targetElement);
         elementMapping.set(parentKey, targetElement);
         // Move node and its siblings to the new
@@ -692,7 +697,10 @@ export function $wrapLeafNodesInElements(
         $removeParentEmptyElements(parent);
       }
     } else if (emptyElements.has(node.getKey())) {
-      elements.push(createElement());
+      const targetElement = createElement();
+      targetElement.setFormat(node.getFormatType());
+      targetElement.setIndent(node.getIndent());
+      elements.push(targetElement);
       node.remove();
     }
   }

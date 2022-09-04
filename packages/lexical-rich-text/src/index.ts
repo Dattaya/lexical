@@ -1,3 +1,4 @@
+/** @module @lexical/rich-text */
 /**
  * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
@@ -45,6 +46,7 @@ import {
   $isGridSelection,
   $isNodeSelection,
   $isRangeSelection,
+  $isRootNode,
   $isTextNode,
   CLICK_COMMAND,
   COMMAND_PRIORITY_EDITOR,
@@ -62,8 +64,10 @@ import {
   INDENT_CONTENT_COMMAND,
   INSERT_LINE_BREAK_COMMAND,
   INSERT_PARAGRAPH_COMMAND,
+  KEY_ARROW_DOWN_COMMAND,
   KEY_ARROW_LEFT_COMMAND,
   KEY_ARROW_RIGHT_COMMAND,
+  KEY_ARROW_UP_COMMAND,
   KEY_BACKSPACE_COMMAND,
   KEY_DELETE_COMMAND,
   KEY_ENTER_COMMAND,
@@ -110,6 +114,7 @@ const updateOptions: {
   tag?: string;
 } = options;
 
+/** @noInheritDoc */
 export class QuoteNode extends ElementNode {
   static getType(): string {
     return 'quote';
@@ -189,7 +194,9 @@ export function $isQuoteNode(
 
 export type HeadingTagType = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 
+/** @noInheritDoc */
 export class HeadingNode extends ElementNode {
+  /** @internal */
   __tag: HeadingTagType;
 
   static getType(): string {
@@ -431,9 +438,9 @@ function onCopyForRichText(
   event: CommandPayloadType<typeof COPY_COMMAND>,
   editor: LexicalEditor,
 ): void {
-  event.preventDefault();
   const selection = $getSelection();
   if (selection !== null) {
+    event.preventDefault();
     const clipboardData =
       event instanceof KeyboardEvent ? null : event.clipboardData;
     const htmlString = $getHtmlContent(editor);
@@ -702,14 +709,67 @@ export function registerRichText(
       COMMAND_PRIORITY_EDITOR,
     ),
     editor.registerCommand<KeyboardEvent>(
+      KEY_ARROW_UP_COMMAND,
+      (event) => {
+        const selection = $getSelection();
+        if (
+          $isNodeSelection(selection) &&
+          !isTargetWithinDecorator(event.target as HTMLElement)
+        ) {
+          // If selection is on a node, let's try and move selection
+          // back to being a range selection.
+          const nodes = selection.getNodes();
+          if (nodes.length > 0) {
+            nodes[0].selectPrevious();
+            return true;
+          }
+        }
+        return false;
+      },
+      COMMAND_PRIORITY_EDITOR,
+    ),
+    editor.registerCommand<KeyboardEvent>(
+      KEY_ARROW_DOWN_COMMAND,
+      (event) => {
+        const selection = $getSelection();
+        if (
+          $isNodeSelection(selection) &&
+          !isTargetWithinDecorator(event.target as HTMLElement)
+        ) {
+          // If selection is on a node, let's try and move selection
+          // back to being a range selection.
+          const nodes = selection.getNodes();
+          if (nodes.length > 0) {
+            nodes[0].selectNext(0, 0);
+            return true;
+          }
+        }
+        return false;
+      },
+      COMMAND_PRIORITY_EDITOR,
+    ),
+    editor.registerCommand<KeyboardEvent>(
       KEY_ARROW_LEFT_COMMAND,
       (event) => {
         const selection = $getSelection();
+        if (
+          $isNodeSelection(selection) &&
+          !isTargetWithinDecorator(event.target as HTMLElement)
+        ) {
+          // If selection is on a node, let's try and move selection
+          // back to being a range selection.
+          const nodes = selection.getNodes();
+          if (nodes.length > 0) {
+            event.preventDefault();
+            nodes[0].selectPrevious();
+            return true;
+          }
+        }
         if (!$isRangeSelection(selection)) {
           return false;
         }
-        const isHoldingShift = event.shiftKey;
         if ($shouldOverrideDefaultCharacterSelection(selection, true)) {
+          const isHoldingShift = event.shiftKey;
           event.preventDefault();
           $moveCharacter(selection, isHoldingShift, true);
           return true;
@@ -722,6 +782,19 @@ export function registerRichText(
       KEY_ARROW_RIGHT_COMMAND,
       (event) => {
         const selection = $getSelection();
+        if (
+          $isNodeSelection(selection) &&
+          !isTargetWithinDecorator(event.target as HTMLElement)
+        ) {
+          // If selection is on a node, let's try and move selection
+          // back to being a range selection.
+          const nodes = selection.getNodes();
+          if (nodes.length > 0) {
+            event.preventDefault();
+            nodes[0].selectNext(0, 0);
+            return true;
+          }
+        }
         if (!$isRangeSelection(selection)) {
           return false;
         }
@@ -747,10 +820,14 @@ export function registerRichText(
         }
         event.preventDefault();
         const {anchor} = selection;
-        if (selection.isCollapsed() && anchor.offset === 0) {
-          const element = $getNearestBlockElementAncestorOrThrow(
-            anchor.getNode(),
-          );
+        const anchorNode = anchor.getNode();
+
+        if (
+          selection.isCollapsed() &&
+          anchor.offset === 0 &&
+          !$isRootNode(anchorNode)
+        ) {
+          const element = $getNearestBlockElementAncestorOrThrow(anchorNode);
           if (element.getIndent() > 0) {
             return editor.dispatchCommand(OUTDENT_CONTENT_COMMAND, undefined);
           }
