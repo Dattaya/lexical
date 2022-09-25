@@ -37,6 +37,8 @@ import AutoLinkPlugin from './plugins/AutoLinkPlugin';
 import ClickableLinkPlugin from './plugins/ClickableLinkPlugin';
 import CodeActionMenuPlugin from './plugins/CodeActionMenuPlugin';
 import CodeHighlightPlugin from './plugins/CodeHighlightPlugin';
+// import ComponentPickerPlugin from './plugins/ComponentPickerPlugin';
+import DraggableBlockPlugin from './plugins/DraggableBlockPlugin';
 import EmojisPlugin from './plugins/EmojisPlugin';
 import FigmaPlugin from './plugins/FigmaPlugin';
 import FloatingLinkEditorPlugin from './plugins/FloatingLinkEditorPlugin';
@@ -195,8 +197,6 @@ export default function Editor({
                 </div>
               }
               placeholder={placeholder}
-              // TODO Collab support until 0.4
-              initialEditorState={isCollab ? null : undefined}
             />
             <MarkdownShortcutPlugin />
             <CodeHighlightPlugin />
@@ -216,9 +216,10 @@ export default function Editor({
             <TabFocusPlugin />
             {floatingAnchorElem && (
               <>
+                <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
                 <CodeActionMenuPlugin anchorElem={floatingAnchorElem} />
-                <TableCellActionMenuPlugin anchorElem={floatingAnchorElem} />
                 <FloatingLinkEditorPlugin anchorElem={floatingAnchorElem} />
+                <TableCellActionMenuPlugin anchorElem={floatingAnchorElem} />
                 <FloatingTextFormatToolbarPlugin
                   anchorElem={floatingAnchorElem}
                   config={normToolbarConfig}
@@ -234,8 +235,6 @@ export default function Editor({
             <PlainTextPlugin
               contentEditable={<ContentEditable />}
               placeholder={placeholder}
-              // TODO Collab support until 0.4
-              initialEditorState={isCollab ? null : undefined}
             />
             <HistoryPlugin externalHistoryState={historyState} />
           </>

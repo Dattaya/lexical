@@ -7,17 +7,19 @@
  */
 
 import type {LexicalComposerContextType} from '@lexical/react/LexicalComposerContext';
-import type {Klass} from 'lexical';
 
 import {
   createLexicalComposerContext,
   LexicalComposerContext,
 } from '@lexical/react/LexicalComposerContext';
 import {
+  $createParagraphNode,
   $getRoot,
+  $getSelection,
   createEditor,
   EditorState,
   EditorThemeClasses,
+  Klass,
   LexicalEditor,
   LexicalNode,
 } from 'lexical';
@@ -89,7 +91,7 @@ export function LexicalComposer({initialConfig, children}: Props): JSX.Element {
   useLayoutEffect(() => {
     const isEditable = initialConfig.editable;
     const [editor] = composerContext;
-    editor.setEditable(isEditable || true);
+    editor.setEditable(isEditable !== undefined ? isEditable : true);
 
     // We only do this for init
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -109,21 +111,20 @@ function initializeEditor(
   if (initialEditorState === null) {
     return;
   } else if (initialEditorState === undefined) {
-    // TODO Uncomment in 0.4
-    // editor.update(() => {
-    //   const root = $getRoot();
-    //   if (root.isEmpty()) {
-    //     const paragraph = $createParagraphNode();
-    //     root.append(paragraph);
-    //     const activeElement = document.activeElement;
-    //     if (
-    //       $getSelection() !== null ||
-    //       (activeElement !== null && activeElement === editor.getRootElement())
-    //     ) {
-    //       paragraph.select();
-    //     }
-    //   }
-    // }, HISTORY_MERGE_OPTIONS);
+    editor.update(() => {
+      const root = $getRoot();
+      if (root.isEmpty()) {
+        const paragraph = $createParagraphNode();
+        root.append(paragraph);
+        const activeElement = document.activeElement;
+        if (
+          $getSelection() !== null ||
+          (activeElement !== null && activeElement === editor.getRootElement())
+        ) {
+          paragraph.select();
+        }
+      }
+    }, HISTORY_MERGE_OPTIONS);
   } else if (initialEditorState !== null) {
     switch (typeof initialEditorState) {
       case 'string': {

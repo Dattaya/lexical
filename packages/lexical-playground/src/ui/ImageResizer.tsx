@@ -35,6 +35,7 @@ export default function ImageResizer({
   setShowCaption,
   setAlign,
   align,
+  captionsEnabled,
 }: {
   editor: LexicalEditor;
   buttonRef: {current: null | HTMLButtonElement};
@@ -46,6 +47,7 @@ export default function ImageResizer({
   showCaption: boolean;
   align?: ImageAlign;
   setAlign?: (newAlign?: ImageAlign) => void;
+  captionsEnabled: boolean;
 }): JSX.Element {
   const controlWrapperRef = useRef<HTMLDivElement>(null);
   const userSelect = useRef({
@@ -249,7 +251,7 @@ export default function ImageResizer({
   };
   return (
     <div ref={controlWrapperRef}>
-      {!showCaption && (
+      {!showCaption && captionsEnabled && (
         <button
           className="image-caption-button"
           ref={buttonRef}

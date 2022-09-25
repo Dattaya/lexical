@@ -8,7 +8,7 @@
 
 import type {InsertImagePayload} from '../ImagesPlugin';
 import type {ToolbarConfig} from '../toolbarTypes';
-import type {LexicalEditor} from 'lexical';
+import type {LexicalEditor, NodeKey} from 'lexical';
 
 import './index.css';
 
@@ -43,10 +43,11 @@ import {
   $isParentElementRTL,
   $patchStyleText,
   $selectAll,
-  $wrapLeafNodesInElements,
+  $wrapNodes,
 } from '@lexical/selection';
 import {INSERT_TABLE_COMMAND} from '@lexical/table';
 import {
+  $findMatchingParent,
   $getNearestBlockElementAncestorOrThrow,
   $getNearestNodeOfType,
   mergeRegister,
@@ -57,6 +58,7 @@ import {
   $getRoot,
   $getSelection,
   $isRangeSelection,
+  $isRootOrShadowRoot,
   $isTextNode,
   CAN_REDO_COMMAND,
   CAN_UNDO_COMMAND,
@@ -64,14 +66,13 @@ import {
   FORMAT_ELEMENT_COMMAND,
   FORMAT_TEXT_COMMAND,
   INDENT_CONTENT_COMMAND,
-  NodeKey,
   OUTDENT_CONTENT_COMMAND,
   REDO_COMMAND,
   SELECTION_CHANGE_COMMAND,
   UNDO_COMMAND,
 } from 'lexical';
 import * as React from 'react';
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {IS_APPLE} from 'shared/environment';
 
 import {useEditorComposerContext} from '../../EditorComposerContext';
@@ -88,6 +89,7 @@ import {sanitizeUrl} from '../../utils/sanitizeUrl';
 import {EmbedConfigs} from '../AutoEmbedPlugin';
 import {INSERT_IMAGE_COMMAND} from '../ImagesPlugin';
 import {INSERT_POLL_COMMAND} from '../PollPlugin';
+import {INSERT_TABLE_COMMAND as INSERT_NEW_TABLE_COMMAND} from '../TablePlugin';
 
 const blockTypeToBlockName = {
   bullet: 'Bulleted List',
@@ -237,6 +239,18 @@ export function InsertImageDialog({
   onUpload?: OnImageUpload;
 }): JSX.Element {
   const [mode, setMode] = useState<null | 'url' | 'file'>(null);
+  const hasModifier = useRef(false);
+
+  useEffect(() => {
+    hasModifier.current = false;
+    const handler = (e: KeyboardEvent) => {
+      hasModifier.current = e.altKey;
+    };
+    document.addEventListener('keydown', handler);
+    return () => {
+      document.removeEventListener('keydown', handler);
+    };
+  }, [activeEditor]);
 
   const onClick = (payload: InsertImagePayload) => {
     activeEditor.dispatchCommand(INSERT_IMAGE_COMMAND, payload);
@@ -332,6 +346,34 @@ export function InsertTableDialog({
   );
 }
 
+export function InsertNewTableDialog({
+  activeEditor,
+  onClose,
+}: {
+  activeEditor: LexicalEditor;
+  onClose: () => void;
+}): JSX.Element {
+  const [rows, setRows] = useState('5');
+  const [columns, setColumns] = useState('5');
+
+  const onClick = () => {
+    activeEditor.dispatchCommand(INSERT_NEW_TABLE_COMMAND, {columns, rows});
+    onClose();
+  };
+
+  return (
+    <>
+      <TextInput label="No of rows" onChange={setRows} value={rows} />
+      <TextInput label="No of columns" onChange={setColumns} value={columns} />
+      <div
+        className="ToolbarPlugin__dialogActions"
+        data-test-id="table-model-confirm-insert">
+        <Button onClick={onClick}>Confirm</Button>
+      </div>
+    </>
+  );
+}
+
 export function InsertPollDialog({
   activeEditor,
   onClose,
@@ -376,7 +418,7 @@ function BlockFormatDropDown({
         const selection = $getSelection();
 
         if ($isRangeSelection(selection)) {
-          $wrapLeafNodesInElements(selection, () => $createParagraphNode());
+          $wrapNodes(selection, () => $createParagraphNode());
         }
       });
     }
@@ -388,9 +430,7 @@ function BlockFormatDropDown({
         const selection = $getSelection();
 
         if ($isRangeSelection(selection)) {
-          $wrapLeafNodesInElements(selection, () =>
-            $createHeadingNode(headingSize),
-          );
+          $wrapNodes(selection, () => $createHeadingNode(headingSize));
         }
       });
     }
@@ -426,7 +466,7 @@ function BlockFormatDropDown({
         const selection = $getSelection();
 
         if ($isRangeSelection(selection)) {
-          $wrapLeafNodesInElements(selection, () => $createQuoteNode());
+          $wrapNodes(selection, () => $createQuoteNode());
         }
       });
     }
@@ -439,7 +479,7 @@ function BlockFormatDropDown({
 
         if ($isRangeSelection(selection)) {
           if (selection.isCollapsed()) {
-            $wrapLeafNodesInElements(selection, () => $createCodeNode());
+            $wrapNodes(selection, () => $createCodeNode());
           } else {
             const textContent = selection.getTextContent();
             const codeNode = $createCodeNode();
@@ -616,10 +656,18 @@ export default function ToolbarPlugin({
     const selection = $getSelection();
     if ($isRangeSelection(selection)) {
       const anchorNode = selection.anchor.getNode();
-      const element =
+      let element =
         anchorNode.getKey() === 'root'
           ? anchorNode
-          : anchorNode.getTopLevelElementOrThrow();
+          : $findMatchingParent(anchorNode, (e) => {
+              const parent = e.getParent();
+              return parent !== null && $isRootOrShadowRoot(parent);
+            });
+
+      if (element === null) {
+        element = anchorNode.getTopLevelElementOrThrow();
+      }
+
       const elementKey = element.getKey();
       const elementDOM = activeEditor.getElementByKey(elementKey);
 

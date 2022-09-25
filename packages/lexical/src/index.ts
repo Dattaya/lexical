@@ -112,22 +112,27 @@ export {
 } from './LexicalEditor';
 export type {EventHandler} from './LexicalEvents';
 export {
-  $createGridSelection,
   $createNodeSelection,
   $createRangeSelection,
   $getPreviousSelection,
   $getSelection,
-  $isGridSelection,
+  $insertNodes,
   $isNodeSelection,
   $isRangeSelection,
+  DEPRECATED_$createGridSelection,
+  DEPRECATED_$isGridSelection,
 } from './LexicalSelection';
 export {$parseSerializedNode} from './LexicalUpdates';
 export {
+  $addUpdateTag,
   $getDecoratorNode,
   $getNearestNodeFromDOMNode,
   $getNodeByKey,
   $getRoot,
+  $hasAncestor,
+  $isInlineElementOrDecoratorNode,
   $isLeafNode,
+  $isRootOrShadowRoot,
   $nodesOfType,
   $setCompositionKey,
   $setSelection,
@@ -135,9 +140,18 @@ export {
 export {VERSION} from './LexicalVersion';
 export {$isDecoratorNode, DecoratorNode} from './nodes/LexicalDecoratorNode';
 export {$isElementNode, ElementNode} from './nodes/LexicalElementNode';
-export {$isGridCellNode, GridCellNode} from './nodes/LexicalGridCellNode';
-export {$isGridNode, GridNode} from './nodes/LexicalGridNode';
-export {$isGridRowNode, GridRowNode} from './nodes/LexicalGridRowNode';
+export {
+  DEPRECATED_$isGridCellNode,
+  DEPRECATED_GridCellNode,
+} from './nodes/LexicalGridCellNode';
+export {
+  DEPRECATED_$isGridNode,
+  DEPRECATED_GridNode,
+} from './nodes/LexicalGridNode';
+export {
+  DEPRECATED_$isGridRowNode,
+  DEPRECATED_GridRowNode,
+} from './nodes/LexicalGridRowNode';
 export type {SerializedLineBreakNode} from './nodes/LexicalLineBreakNode';
 export {
   $createLineBreakNode,

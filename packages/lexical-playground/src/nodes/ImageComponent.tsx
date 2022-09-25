@@ -26,11 +26,9 @@ import {HistoryPlugin} from '@lexical/react/LexicalHistoryPlugin';
 import {LinkPlugin} from '@lexical/react/LexicalLinkPlugin';
 import {LexicalNestedComposer} from '@lexical/react/LexicalNestedComposer';
 import {RichTextPlugin} from '@lexical/react/LexicalRichTextPlugin';
-import {TablePlugin} from '@lexical/react/LexicalTablePlugin';
 import {useLexicalNodeSelection} from '@lexical/react/useLexicalNodeSelection';
 import {mergeRegister} from '@lexical/utils';
 import {
-  $createNodeSelection,
   $getNodeByKey,
   $getSelection,
   $isNodeSelection,
@@ -50,10 +48,8 @@ import {createWebsocketProvider} from '../collaboration';
 import {useSettings} from '../context/SettingsContext';
 import {useSharedHistoryContext} from '../context/SharedHistoryContext';
 import EmojisPlugin from '../plugins/EmojisPlugin';
-import ImagesPlugin from '../plugins/ImagesPlugin';
 import KeywordsPlugin from '../plugins/KeywordsPlugin';
 import MentionsPlugin from '../plugins/MentionsPlugin';
-import TableCellActionMenuPlugin from '../plugins/TableActionMenuPlugin';
 import TreeViewPlugin from '../plugins/TreeViewPlugin';
 import ContentEditable from '../ui/ContentEditable';
 import ImageResizer from '../ui/ImageResizer';
@@ -119,6 +115,7 @@ export default function ImageComponent({
   resizable,
   showCaption,
   caption,
+  captionsEnabled,
   align,
 }: {
   altText: string;
@@ -130,9 +127,10 @@ export default function ImageComponent({
   showCaption: boolean;
   src: string;
   width: 'inherit' | number;
+  captionsEnabled: boolean;
   align?: ImageAlign;
 }): JSX.Element {
-  const imageRef = useRef(null);
+  const imageRef = useRef<null | HTMLImageElement>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const [isSelected, setSelected, clearSelection] =
     useLexicalNodeSelection(nodeKey);
@@ -197,19 +195,17 @@ export default function ImageComponent({
       ) {
         $setSelection(null);
         editor.update(() => {
-          const nodeSelection = $createNodeSelection();
-          nodeSelection.add(nodeKey);
+          setSelected(true);
           const parentRootElement = editor.getRootElement();
           if (parentRootElement !== null) {
             parentRootElement.focus();
           }
-          $setSelection(nodeSelection);
         });
         return true;
       }
       return false;
     },
-    [caption, editor, nodeKey],
+    [caption, editor, setSelected],
   );
 
   useEffect(() => {
@@ -234,10 +230,12 @@ export default function ImageComponent({
             return true;
           }
           if (event.target === imageRef.current) {
-            if (!event.shiftKey) {
+            if (event.shiftKey) {
+              setSelected(!isSelected);
+            } else {
               clearSelection();
+              setSelected(true);
             }
-            setSelected(!isSelected);
             return true;
           }
 
@@ -344,9 +342,6 @@ export default function ImageComponent({
             <LexicalNestedComposer initialEditor={caption}>
               <AutoFocusPlugin />
               <MentionsPlugin />
-              <TablePlugin />
-              <TableCellActionMenuPlugin />
-              <ImagesPlugin />
               <LinkPlugin />
               <EmojisPlugin />
               <HashtagPlugin />
@@ -369,8 +364,6 @@ export default function ImageComponent({
                     Enter a caption...
                   </Placeholder>
                 }
-                // TODO Remove after it's inherited from the parent (LexicalComposer)
-                initialEditorState={isCollabActive ? null : undefined}
               />
               {showNestedEditorTreeView === true ? <TreeViewPlugin /> : null}
             </LexicalNestedComposer>
@@ -388,6 +381,7 @@ export default function ImageComponent({
             maxWidth={maxWidth}
             onResizeStart={onResizeStart}
             onResizeEnd={onResizeEnd}
+            captionsEnabled={captionsEnabled}
           />
         )}
       </>

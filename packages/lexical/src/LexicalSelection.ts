@@ -22,17 +22,17 @@ import {
   $createTextNode,
   $isDecoratorNode,
   $isElementNode,
-  $isGridCellNode,
-  $isGridNode,
-  $isGridRowNode,
   $isLeafNode,
   $isLineBreakNode,
   $isRootNode,
   $isTextNode,
   $setSelection,
   DecoratorNode,
-  GridCellNode,
-  GridNode,
+  DEPRECATED_$isGridCellNode,
+  DEPRECATED_$isGridNode,
+  DEPRECATED_$isGridRowNode,
+  DEPRECATED_GridCellNode,
+  DEPRECATED_GridNode,
   TextNode,
 } from '.';
 import {DOM_ELEMENT_TYPE, TEXT_TYPE_TO_FORMAT} from './LexicalConstants';
@@ -41,6 +41,7 @@ import {
   markSelectionChangeFromDOMUpdate,
 } from './LexicalEvents';
 import {getIsProcesssingMutations} from './LexicalMutations';
+import {$normalizeSelection} from './LexicalNormalization';
 import {
   getActiveEditor,
   getActiveEditorState,
@@ -50,8 +51,9 @@ import {
   $getCompositionKey,
   $getDecoratorNode,
   $getNodeByKey,
-  $isTokenOrInert,
-  $isTokenOrInertOrSegmented,
+  $getRoot,
+  $isRootOrShadowRoot,
+  $isTokenOrSegmented,
   $setCompositionKey,
   doesContainGrapheme,
   getDOMTextNode,
@@ -309,6 +311,27 @@ export class NodeSelection implements BaseSelection {
     // Do nothing?
   }
 
+  insertNodes(nodes: Array<LexicalNode>, selectStart?: boolean): boolean {
+    const selectedNodes = this.getNodes();
+    const selectedNodesLength = selectedNodes.length;
+    const lastSelectedNode = selectedNodes[selectedNodesLength - 1];
+    let selectionAtEnd: RangeSelection;
+    // Insert nodes
+    if ($isTextNode(lastSelectedNode)) {
+      selectionAtEnd = lastSelectedNode.select();
+    } else {
+      const index = lastSelectedNode.getIndexWithinParent() + 1;
+      selectionAtEnd = lastSelectedNode.getParentOrThrow().select(index, index);
+    }
+    selectionAtEnd.insertNodes(nodes, selectStart);
+    // Remove selected nodes
+    for (let i = 0; i < selectedNodesLength; i++) {
+      selectedNodes[i].remove();
+    }
+
+    return true;
+  }
+
   getNodes(): Array<LexicalNode> {
     const cachedNodes = this._cachedNodes;
     if (cachedNodes !== null) {
@@ -369,7 +392,7 @@ export class GridSelection implements BaseSelection {
   is(
     selection: null | RangeSelection | NodeSelection | GridSelection,
   ): boolean {
-    if (!$isGridSelection(selection)) {
+    if (!DEPRECATED_$isGridSelection(selection)) {
       return false;
     }
     return this.gridKey === selection.gridKey && this.anchor.is(this.focus);
@@ -411,6 +434,14 @@ export class GridSelection implements BaseSelection {
     // Do nothing?
   }
 
+  insertNodes(nodes: Array<LexicalNode>, selectStart?: boolean): boolean {
+    const focusNode = this.focus.getNode();
+    const selection = $normalizeSelection(
+      focusNode.select(0, focusNode.getChildrenSize()),
+    );
+    return selection.insertNodes(nodes, selectStart);
+  }
+
   getShape(): GridSelectionShape {
     const anchorCellNode = $getNodeByKey(this.anchor.key);
     invariant(anchorCellNode !== null, 'getNodes: expected to find AnchorNode');
@@ -448,8 +479,8 @@ export class GridSelection implements BaseSelection {
     const nodesSet = new Set<LexicalNode>();
     const {fromX, fromY, toX, toY} = this.getShape();
 
-    const gridNode = $getNodeByKey<GridNode>(this.gridKey);
-    if (!$isGridNode(gridNode)) {
+    const gridNode = $getNodeByKey<DEPRECATED_GridNode>(this.gridKey);
+    if (!DEPRECATED_$isGridNode(gridNode)) {
       invariant(false, 'getNodes: expected to find GridNode');
     }
     nodesSet.add(gridNode);
@@ -459,13 +490,13 @@ export class GridSelection implements BaseSelection {
       const gridRowNode = gridRowNodes[r];
       nodesSet.add(gridRowNode);
 
-      if (!$isGridRowNode(gridRowNode)) {
+      if (!DEPRECATED_$isGridRowNode(gridRowNode)) {
         invariant(false, 'getNodes: expected to find GridRowNode');
       }
-      const gridCellNodes = gridRowNode.getChildren<GridCellNode>();
+      const gridCellNodes = gridRowNode.getChildren<DEPRECATED_GridCellNode>();
       for (let c = fromX; c <= toX; c++) {
         const gridCellNode = gridCellNodes[c];
-        if (!$isGridCellNode(gridCellNode)) {
+        if (!DEPRECATED_$isGridCellNode(gridCellNode)) {
           invariant(false, 'getNodes: expected to find GridCellNode');
         }
         nodesSet.add(gridCellNode);
@@ -498,7 +529,7 @@ export class GridSelection implements BaseSelection {
   }
 }
 
-export function $isGridSelection(x: unknown): x is GridSelection {
+export function DEPRECATED_$isGridSelection(x: unknown): x is GridSelection {
   return x instanceof GridSelection;
 }
 
@@ -761,10 +792,7 @@ export class RangeSelection implements BaseSelection {
           firstNode.getNextSibling() === null))
     ) {
       let nextSibling = firstNode.getNextSibling<TextNode>();
-      if (
-        !$isTextNode(nextSibling) ||
-        $isTokenOrInertOrSegmented(nextSibling)
-      ) {
+      if (!$isTextNode(nextSibling) || $isTokenOrSegmented(nextSibling)) {
         nextSibling = $createTextNode();
         nextSibling.setFormat(format);
         if (!firstNodeParent.canInsertTextAfter()) {
@@ -789,10 +817,7 @@ export class RangeSelection implements BaseSelection {
           firstNode.getPreviousSibling() === null))
     ) {
       let prevSibling = firstNode.getPreviousSibling<TextNode>();
-      if (
-        !$isTextNode(prevSibling) ||
-        $isTokenOrInertOrSegmented(prevSibling)
-      ) {
+      if (!$isTextNode(prevSibling) || $isTokenOrSegmented(prevSibling)) {
         prevSibling = $createTextNode();
         prevSibling.setFormat(format);
         if (!firstNodeParent.canInsertTextBefore()) {
@@ -834,7 +859,7 @@ export class RangeSelection implements BaseSelection {
     }
 
     if (selectedNodesLength === 1) {
-      if ($isTokenOrInert(firstNode)) {
+      if (firstNode.isToken()) {
         const textNode = $createTextNode(text);
         textNode.select();
         firstNode.replace(textNode);
@@ -914,7 +939,7 @@ export class RangeSelection implements BaseSelection {
       ) {
         if (
           $isTextNode(lastNode) &&
-          !$isTokenOrInert(lastNode) &&
+          !lastNode.isToken() &&
           endOffset !== lastNode.getTextContentSize()
         ) {
           if (lastNode.isSegmented()) {
@@ -1004,7 +1029,7 @@ export class RangeSelection implements BaseSelection {
 
       // Ensure we do splicing after moving of nodes, as splicing
       // can have side-effects (in the case of hashtags).
-      if (!$isTokenOrInert(firstNode)) {
+      if (!firstNode.isToken()) {
         firstNode = firstNode.spliceText(
           startOffset,
           firstNodeTextLength - startOffset,
@@ -1192,7 +1217,7 @@ export class RangeSelection implements BaseSelection {
     // Get all remaining text node siblings in this element so we can
     // append them after the last node we're inserting.
     const nextSiblings = anchorNode.getNextSiblings();
-    const topLevelElement = $isRootNode(anchorNode)
+    const topLevelElement = $isRootOrShadowRoot(anchorNode)
       ? null
       : anchorNode.getTopLevelElementOrThrow();
 
@@ -1209,8 +1234,8 @@ export class RangeSelection implements BaseSelection {
         siblings.push(anchorNode);
       } else if (anchorOffset === textContentLength) {
         target = anchorNode;
-      } else if ($isTokenOrInert(anchorNode)) {
-        // Do nothing if we're inside a token/inert node
+      } else if (anchorNode.isToken()) {
+        // Do nothing if we're inside a token node
         return false;
       } else {
         // If we started with a range selected grab the danglingText after the
@@ -1317,7 +1342,7 @@ export class RangeSelection implements BaseSelection {
       } else if (
         didReplaceOrMerge &&
         !$isDecoratorNode(node) &&
-        $isRootNode(target.getParent<ElementNode>())
+        $isRootOrShadowRoot(target.getParent<ElementNode>())
       ) {
         invariant(
           false,
@@ -1327,7 +1352,7 @@ export class RangeSelection implements BaseSelection {
       didReplaceOrMerge = false;
       if ($isElementNode(target) && !target.isInline()) {
         lastNode = node;
-        if ($isDecoratorNode(node) && node.isTopLevel()) {
+        if ($isDecoratorNode(node) && !node.isInline()) {
           target = target.insertAfter(node);
         } else if (!$isElementNode(node)) {
           const firstChild = target.getFirstChild();
@@ -1341,7 +1366,7 @@ export class RangeSelection implements BaseSelection {
           if (!node.canBeEmpty() && node.isEmpty()) {
             continue;
           }
-          if ($isRootNode(target)) {
+          if ($isRootOrShadowRoot(target)) {
             const placementNode = target.getChildAtIndex(anchorOffset);
             if (placementNode !== null) {
               placementNode.insertBefore(node);
@@ -1356,7 +1381,7 @@ export class RangeSelection implements BaseSelection {
       } else if (
         !$isElementNode(node) ||
         ($isElementNode(node) && node.isInline()) ||
-        ($isDecoratorNode(target) && target.isTopLevel())
+        ($isDecoratorNode(target) && !target.isInline())
       ) {
         lastNode = node;
         target = target.insertAfter(node);
@@ -1415,7 +1440,7 @@ export class RangeSelection implements BaseSelection {
           if (
             $isElementNode(target) &&
             !$isBlockElementNode(sibling) &&
-            !($isDecoratorNode(sibling) && sibling.isTopLevel())
+            !($isDecoratorNode(sibling) && !sibling.isInline())
           ) {
             if (originalTarget === target) {
               target.append(sibling);
@@ -1497,7 +1522,7 @@ export class RangeSelection implements BaseSelection {
       }
     } else {
       currentElement = anchor.getNode();
-      if ($isRootNode(currentElement)) {
+      if ($isRootOrShadowRoot(currentElement)) {
         const paragraph = $createParagraphNode();
         const child = currentElement.getChildAtIndex(anchorOffset);
         paragraph.select();
@@ -2082,7 +2107,7 @@ function resolveSelectionPointOnBoundary(
         point.offset = prevSibling.getChildrenSize();
         // @ts-expect-error: intentional
         point.type = 'element';
-      } else if ($isTextNode(prevSibling) && !prevSibling.isInert()) {
+      } else if ($isTextNode(prevSibling)) {
         point.key = prevSibling.__key;
         point.offset = prevSibling.getTextContent().length;
       }
@@ -2256,7 +2281,7 @@ export function $createNodeSelection(): NodeSelection {
   return new NodeSelection(new Set());
 }
 
-export function $createGridSelection(): GridSelection {
+export function DEPRECATED_$createGridSelection(): GridSelection {
   const anchor = $createPoint('root', 0, 'element');
   const focus = $createPoint('root', 0, 'element');
   return new GridSelection('root', anchor, focus);
@@ -2269,7 +2294,10 @@ export function internalCreateSelection(
   const lastSelection = currentEditorState._selection;
   const domSelection = getDOMSelection();
 
-  if ($isNodeSelection(lastSelection) || $isGridSelection(lastSelection)) {
+  if (
+    $isNodeSelection(lastSelection) ||
+    DEPRECATED_$isGridSelection(lastSelection)
+  ) {
     return lastSelection.clone();
   }
 
@@ -2693,4 +2721,15 @@ export function updateDOMSelection(
     // occur with FF and there's no good reason as to why it
     // should happen.
   }
+}
+
+export function $insertNodes(
+  nodes: Array<LexicalNode>,
+  selectStart?: boolean,
+): boolean {
+  let selection = $getSelection();
+  if (selection === null) {
+    selection = $getRoot().selectEnd();
+  }
+  return selection.insertNodes(nodes, selectStart);
 }

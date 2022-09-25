@@ -26,8 +26,8 @@ import {KeywordNode} from './KeywordNode';
 import {MentionNode} from './MentionNode';
 import {PollNode} from './PollNode';
 import {StickyNode} from './StickyNode';
+import {TableNode as NewTableNode} from './TableNode';
 import {TweetNode} from './TweetNode';
-import {TypeaheadNode} from './TypeaheadNode';
 import {YouTubeNode} from './YouTubeNode';
 
 const PlaygroundNodes: Array<Klass<LexicalNode>> = [
@@ -36,6 +36,7 @@ const PlaygroundNodes: Array<Klass<LexicalNode>> = [
   ListItemNode,
   QuoteNode,
   CodeNode,
+  NewTableNode,
   TableNode,
   TableCellNode,
   TableRowNode,
@@ -50,7 +51,6 @@ const PlaygroundNodes: Array<Klass<LexicalNode>> = [
   MentionNode,
   EmojiNode,
   AutocompleteNode,
-  TypeaheadNode,
   KeywordNode,
   HorizontalRuleNode,
   TweetNode,
