@@ -40,7 +40,7 @@ import {
   $isParentElementRTL,
   $patchStyleText,
   $selectAll,
-  $wrapNodes,
+  $setBlocksType_experimental,
 } from '@lexical/selection';
 import {
   $findMatchingParent,
@@ -78,13 +78,10 @@ import {$createStickyNode} from '../../nodes/StickyNode';
 import ColorPicker from '../../ui/ColorPicker';
 import DropDown, {DropDownItem} from '../../ui/DropDown';
 import {getSelectedNode} from '../../utils/getSelectedNode';
-import {sanitizeUrl} from '../../utils/sanitizeUrl';
+import {sanitizeUrl} from '../../utils/url';
 import {EmbedConfigs} from '../AutoEmbedPlugin';
 import {INSERT_COLLAPSIBLE_COMMAND} from '../CollapsiblePlugin';
-import {
-  type OnImageUpload,
-  InsertImageDialog,
-} from '../ImagesPlugin';
+import {type OnImageUpload, InsertImageDialog} from '../ImagesPlugin';
 import {InsertPollDialog} from '../PollPlugin';
 import {InsertTableDialog} from '../TablePlugin';
 
@@ -158,13 +155,11 @@ function BlockFormatDropDown({
     if (blockType !== 'paragraph') {
       editor.update(() => {
         const selection = $getSelection();
-
         if (
           $isRangeSelection(selection) ||
           DEPRECATED_$isGridSelection(selection)
-        ) {
-          $wrapNodes(selection, () => $createParagraphNode());
-        }
+        )
+          $setBlocksType_experimental(selection, () => $createParagraphNode());
       });
     }
   };
@@ -173,12 +168,13 @@ function BlockFormatDropDown({
     if (blockType !== headingSize) {
       editor.update(() => {
         const selection = $getSelection();
-
         if (
           $isRangeSelection(selection) ||
           DEPRECATED_$isGridSelection(selection)
         ) {
-          $wrapNodes(selection, () => $createHeadingNode(headingSize));
+          $setBlocksType_experimental(selection, () =>
+            $createHeadingNode(headingSize),
+          );
         }
       });
     }
@@ -212,12 +208,11 @@ function BlockFormatDropDown({
     if (blockType !== 'quote') {
       editor.update(() => {
         const selection = $getSelection();
-
         if (
           $isRangeSelection(selection) ||
           DEPRECATED_$isGridSelection(selection)
         ) {
-          $wrapNodes(selection, () => $createQuoteNode());
+          $setBlocksType_experimental(selection, () => $createQuoteNode());
         }
       });
     }
@@ -226,19 +221,21 @@ function BlockFormatDropDown({
   const formatCode = () => {
     if (blockType !== 'code') {
       editor.update(() => {
-        const selection = $getSelection();
+        let selection = $getSelection();
 
         if (
           $isRangeSelection(selection) ||
           DEPRECATED_$isGridSelection(selection)
         ) {
           if (selection.isCollapsed()) {
-            $wrapNodes(selection, () => $createCodeNode());
+            $setBlocksType_experimental(selection, () => $createCodeNode());
           } else {
             const textContent = selection.getTextContent();
             const codeNode = $createCodeNode();
             selection.insertNodes([codeNode]);
-            selection.insertRawText(textContent);
+            selection = $getSelection();
+            if ($isRangeSelection(selection))
+              selection.insertRawText(textContent);
           }
         }
       });
@@ -611,30 +608,28 @@ export default function ToolbarPlugin({
 
   return (
     <div className="toolbar">
-      {config.undoRedo && (
-        <>
-          <button
-            disabled={!canUndo || !isEditable}
-            onClick={() => {
-              activeEditor.dispatchCommand(UNDO_COMMAND, undefined);
-            }}
-            title={IS_APPLE ? 'Undo (⌘Z)' : 'Undo (Ctrl+Z)'}
-            className="toolbar-item spaced"
-            aria-label="Undo">
-            <i className="format undo" />
-          </button>
-          <button
-            disabled={!canRedo || !isEditable}
-            onClick={() => {
-              activeEditor.dispatchCommand(REDO_COMMAND, undefined);
-            }}
-            title={IS_APPLE ? 'Redo (⌘Y)' : 'Redo (Ctrl+Y)'}
-            className="toolbar-item"
-            aria-label="Redo">
-            <i className="format redo" />
-          </button>
-        </>
-      )}
+      <button
+        disabled={!canUndo || !isEditable}
+        onClick={() => {
+          activeEditor.dispatchCommand(UNDO_COMMAND, undefined);
+        }}
+        title={IS_APPLE ? 'Undo (⌘Z)' : 'Undo (Ctrl+Z)'}
+        type="button"
+        className="toolbar-item spaced"
+        aria-label="Undo">
+        <i className="format undo" />
+      </button>
+      <button
+        disabled={!canRedo || !isEditable}
+        onClick={() => {
+          activeEditor.dispatchCommand(REDO_COMMAND, undefined);
+        }}
+        title={IS_APPLE ? 'Redo (⌘Y)' : 'Redo (Ctrl+Y)'}
+        type="button"
+        className="toolbar-item"
+        aria-label="Redo">
+        <i className="format redo" />
+      </button>
       <Divider />
       {blockType in blockTypeToBlockName && activeEditor === editor && (
         <>
@@ -688,151 +683,134 @@ export default function ToolbarPlugin({
             />
           )}
           <Divider />
-          {config.biu && (
-            <>
-              <button
-                disabled={!isEditable}
-                onClick={() => {
-                  activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
-                }}
-                className={'toolbar-item spaced ' + (isBold ? 'active' : '')}
-                title={IS_APPLE ? 'Bold (⌘B)' : 'Bold (Ctrl+B)'}
-                aria-label={`Format text as bold. Shortcut: ${
-                  IS_APPLE ? '⌘B' : 'Ctrl+B'
-                }`}>
-                <i className="format bold" />
-              </button>
-              <button
-                disabled={!isEditable}
-                onClick={() => {
-                  activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic');
-                }}
-                className={'toolbar-item spaced ' + (isItalic ? 'active' : '')}
-                title={IS_APPLE ? 'Italic (⌘I)' : 'Italic (Ctrl+I)'}
-                aria-label={`Format text as italics. Shortcut: ${
-                  IS_APPLE ? '⌘I' : 'Ctrl+I'
-                }`}>
-                <i className="format italic" />
-              </button>
-              <button
-                disabled={!isEditable}
-                onClick={() => {
-                  activeEditor.dispatchCommand(
-                    FORMAT_TEXT_COMMAND,
-                    'underline',
-                  );
-                }}
-                className={
-                  'toolbar-item spaced ' + (isUnderline ? 'active' : '')
-                }
-                title={IS_APPLE ? 'Underline (⌘U)' : 'Underline (Ctrl+U)'}
-                aria-label={`Format text to underlined. Shortcut: ${
-                  IS_APPLE ? '⌘U' : 'Ctrl+U'
-                }`}>
-                <i className="format underline" />
-              </button>
-            </>
-          )}
-          {config.codeBlock && (
-            <button
-              disabled={!isEditable}
+          <button
+            disabled={!isEditable}
+            onClick={() => {
+              activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
+            }}
+            className={'toolbar-item spaced ' + (isBold ? 'active' : '')}
+            title={IS_APPLE ? 'Bold (⌘B)' : 'Bold (Ctrl+B)'}
+            type="button"
+            aria-label={`Format text as bold. Shortcut: ${
+              IS_APPLE ? '⌘B' : 'Ctrl+B'
+            }`}>
+            <i className="format bold" />
+          </button>
+          <button
+            disabled={!isEditable}
+            onClick={() => {
+              activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic');
+            }}
+            className={'toolbar-item spaced ' + (isItalic ? 'active' : '')}
+            title={IS_APPLE ? 'Italic (⌘I)' : 'Italic (Ctrl+I)'}
+            type="button"
+            aria-label={`Format text as italics. Shortcut: ${
+              IS_APPLE ? '⌘I' : 'Ctrl+I'
+            }`}>
+            <i className="format italic" />
+          </button>
+          <button
+            disabled={!isEditable}
+            onClick={() => {
+              activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline');
+            }}
+            className={'toolbar-item spaced ' + (isUnderline ? 'active' : '')}
+            title={IS_APPLE ? 'Underline (⌘U)' : 'Underline (Ctrl+U)'}
+            type="button"
+            aria-label={`Format text to underlined. Shortcut: ${
+              IS_APPLE ? '⌘U' : 'Ctrl+U'
+            }`}>
+            <i className="format underline" />
+          </button>
+          <button
+            disabled={!isEditable}
+            onClick={() => {
+              activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code');
+            }}
+            className={'toolbar-item spaced ' + (isCode ? 'active' : '')}
+            title="Insert code block"
+            type="button"
+            aria-label="Insert code block">
+            <i className="format code" />
+          </button>
+          <button
+            disabled={!isEditable}
+            onClick={insertLink}
+            className={'toolbar-item spaced ' + (isLink ? 'active' : '')}
+            aria-label="Insert link"
+            title="Insert link"
+            type="button">
+            <i className="format link" />
+          </button>
+          <ColorPicker
+            disabled={!isEditable}
+            buttonClassName="toolbar-item color-picker"
+            buttonAriaLabel="Formatting text color"
+            buttonIconClassName="icon font-color"
+            color={fontColor}
+            onChange={onFontColorSelect}
+            title="text color"
+          />
+          <ColorPicker
+            disabled={!isEditable}
+            buttonClassName="toolbar-item color-picker"
+            buttonAriaLabel="Formatting background color"
+            buttonIconClassName="icon bg-color"
+            color={bgColor}
+            onChange={onBgColorSelect}
+            title="bg color"
+          />
+          <DropDown
+            disabled={!isEditable}
+            buttonClassName="toolbar-item spaced"
+            buttonLabel=""
+            buttonAriaLabel="Formatting options for additional text styles"
+            buttonIconClassName="icon dropdown-more">
+            <DropDownItem
               onClick={() => {
-                activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code');
+                activeEditor.dispatchCommand(
+                  FORMAT_TEXT_COMMAND,
+                  'strikethrough',
+                );
               }}
-              className={'toolbar-item spaced ' + (isCode ? 'active' : '')}
-              title="Insert code block"
-              aria-label="Insert code block">
-              <i className="format code" />
-            </button>
-          )}
-          {config.link && (
-            <button
-              disabled={!isEditable}
-              onClick={insertLink}
-              className={'toolbar-item spaced ' + (isLink ? 'active' : '')}
-              aria-label="Insert link"
-              title="Insert link">
-              <i className="format link" />
-            </button>
-          )}
-          {config.textColorPicker && (
-            <ColorPicker
-              disabled={!isEditable}
-              buttonClassName="toolbar-item color-picker"
-              buttonAriaLabel="Formatting text color"
-              buttonIconClassName="icon font-color"
-              color={fontColor}
-              onChange={onFontColorSelect}
-              title="text color"
-            />
-          )}
-          {config.bgColorPicker && (
-            <ColorPicker
-              disabled={!isEditable}
-              buttonClassName="toolbar-item color-picker"
-              buttonAriaLabel="Formatting background color"
-              buttonIconClassName="icon bg-color"
-              color={bgColor}
-              onChange={onBgColorSelect}
-              title="bg color"
-            />
-          )}
-          {config.formatTextOptions && (
-            <DropDown
-              disabled={!isEditable}
-              buttonClassName="toolbar-item spaced"
-              buttonLabel=""
-              buttonAriaLabel="Formatting options for additional text styles"
-              buttonIconClassName="icon dropdown-more">
-              <DropDownItem
-                onClick={() => {
-                  activeEditor.dispatchCommand(
-                    FORMAT_TEXT_COMMAND,
-                    'strikethrough',
-                  );
-                }}
-                className={'item ' + dropDownActiveClass(isStrikethrough)}
-                title="Strikethrough"
-                aria-label="Format text with a strikethrough">
-                <i className="icon strikethrough" />
-                <span className="text">Strikethrough</span>
-              </DropDownItem>
-              <DropDownItem
-                onClick={() => {
-                  activeEditor.dispatchCommand(
-                    FORMAT_TEXT_COMMAND,
-                    'subscript',
-                  );
-                }}
-                className={'item ' + dropDownActiveClass(isSubscript)}
-                title="Subscript"
-                aria-label="Format text with a subscript">
-                <i className="icon subscript" />
-                <span className="text">Subscript</span>
-              </DropDownItem>
-              <DropDownItem
-                onClick={() => {
-                  activeEditor.dispatchCommand(
-                    FORMAT_TEXT_COMMAND,
-                    'superscript',
-                  );
-                }}
-                className={'item ' + dropDownActiveClass(isSuperscript)}
-                title="Superscript"
-                aria-label="Format text with a superscript">
-                <i className="icon superscript" />
-                <span className="text">Superscript</span>
-              </DropDownItem>
-              <DropDownItem
-                onClick={clearFormatting}
-                className="item"
-                title="Clear text formatting"
-                aria-label="Clear all text formatting">
-                <i className="icon clear" />
-                <span className="text">Clear Formatting</span>
-              </DropDownItem>
-            </DropDown>
-          )}
+              className={'item ' + dropDownActiveClass(isStrikethrough)}
+              title="Strikethrough"
+              aria-label="Format text with a strikethrough">
+              <i className="icon strikethrough" />
+              <span className="text">Strikethrough</span>
+            </DropDownItem>
+            <DropDownItem
+              onClick={() => {
+                activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, 'subscript');
+              }}
+              className={'item ' + dropDownActiveClass(isSubscript)}
+              title="Subscript"
+              aria-label="Format text with a subscript">
+              <i className="icon subscript" />
+              <span className="text">Subscript</span>
+            </DropDownItem>
+            <DropDownItem
+              onClick={() => {
+                activeEditor.dispatchCommand(
+                  FORMAT_TEXT_COMMAND,
+                  'superscript',
+                );
+              }}
+              className={'item ' + dropDownActiveClass(isSuperscript)}
+              title="Superscript"
+              aria-label="Format text with a superscript">
+              <i className="icon superscript" />
+              <span className="text">Superscript</span>
+            </DropDownItem>
+            <DropDownItem
+              onClick={clearFormatting}
+              className="item"
+              title="Clear text formatting"
+              aria-label="Clear all text formatting">
+              <i className="icon clear" />
+              <span className="text">Clear Formatting</span>
+            </DropDownItem>
+          </DropDown>
           <Divider />
           {config?.insertOptions && (
             <DropDown

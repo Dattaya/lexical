@@ -7,6 +7,7 @@
  */
 
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
+import useLexicalEditable from '@lexical/react/useLexicalEditable';
 import {
   $deleteTableColumn,
   $getElementGridForTableNode,
@@ -537,9 +538,12 @@ export default function TableActionMenuPlugin({
   anchorElem = document.body,
 }: {
   anchorElem?: HTMLElement;
-}): ReactPortal {
+}): null | ReactPortal {
+  const isEditable = useLexicalEditable();
   return createPortal(
-    <TableCellActionMenuContainer anchorElem={anchorElem} />,
+    isEditable ? (
+      <TableCellActionMenuContainer anchorElem={anchorElem} />
+    ) : null,
     anchorElem,
   );
 }

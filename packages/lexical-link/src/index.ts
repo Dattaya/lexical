@@ -22,6 +22,7 @@ import type {
 
 import {addClassNamesToElement} from '@lexical/utils';
 import {
+  $applyNodeReplacement,
   $getSelection,
   $isElementNode,
   $isRangeSelection,
@@ -30,15 +31,18 @@ import {
   Spread,
 } from 'lexical';
 
+export type LinkAttributes = {
+  rel?: null | string;
+  target?: null | string;
+};
+
 export type SerializedLinkNode = Spread<
   {
     type: 'link';
     url: string;
-    target?: null | string;
-    rel?: null | string;
     version: 1;
   },
-  SerializedElementNode
+  Spread<LinkAttributes, SerializedElementNode>
 >;
 
 /** @noInheritDoc */
@@ -62,14 +66,7 @@ export class LinkNode extends ElementNode {
     );
   }
 
-  constructor(
-    url: string,
-    attributes: {
-      target?: null | string;
-      rel?: null | string;
-    } = {},
-    key?: NodeKey,
-  ) {
+  constructor(url: string, attributes: LinkAttributes = {}, key?: NodeKey) {
     super(key);
     const {target = null, rel = null} = attributes;
     this.__url = url;
@@ -180,8 +177,14 @@ export class LinkNode extends ElementNode {
     writable.__rel = rel;
   }
 
-  insertNewAfter(selection: RangeSelection): null | ElementNode {
-    const element = this.getParentOrThrow().insertNewAfter(selection);
+  insertNewAfter(
+    selection: RangeSelection,
+    restoreSelection = true,
+  ): null | ElementNode {
+    const element = this.getParentOrThrow().insertNewAfter(
+      selection,
+      restoreSelection,
+    );
     if ($isElementNode(element)) {
       const linkNode = $createLinkNode(this.__url, {
         rel: this.__rel,
@@ -245,12 +248,9 @@ function convertAnchorElement(domNode: Node): DOMConversionOutput {
 
 export function $createLinkNode(
   url: string,
-  attributes?: {
-    target?: null | string;
-    rel?: null | string;
-  },
+  attributes?: LinkAttributes,
 ): LinkNode {
-  return new LinkNode(url, attributes);
+  return $applyNodeReplacement(new LinkNode(url, attributes));
 }
 
 export function $isLinkNode(
@@ -306,8 +306,14 @@ export class AutoLinkNode extends LinkNode {
     };
   }
 
-  insertNewAfter(selection: RangeSelection): null | ElementNode {
-    const element = this.getParentOrThrow().insertNewAfter(selection);
+  insertNewAfter(
+    selection: RangeSelection,
+    restoreSelection = true,
+  ): null | ElementNode {
+    const element = this.getParentOrThrow().insertNewAfter(
+      selection,
+      restoreSelection,
+    );
     if ($isElementNode(element)) {
       const linkNode = $createAutoLinkNode(this.__url, {
         rel: this._rel,
@@ -322,12 +328,9 @@ export class AutoLinkNode extends LinkNode {
 
 export function $createAutoLinkNode(
   url: string,
-  attributes?: {
-    target?: null | string;
-    rel?: null | string;
-  },
+  attributes?: LinkAttributes,
 ): AutoLinkNode {
-  return new AutoLinkNode(url, attributes);
+  return $applyNodeReplacement(new AutoLinkNode(url, attributes));
 }
 
 export function $isAutoLinkNode(
@@ -337,23 +340,15 @@ export function $isAutoLinkNode(
 }
 
 export const TOGGLE_LINK_COMMAND: LexicalCommand<
-  | string
-  | {
-      url: string;
-      target?: string;
-      rel?: string;
-    }
-  | null
+  string | ({url: string} & LinkAttributes) | null
 > = createCommand('TOGGLE_LINK_COMMAND');
 
 export function toggleLink(
   url: null | string,
-  attributes: {
-    target?: null | string;
-    rel?: null | string;
-  } = {},
+  attributes: LinkAttributes = {},
 ): void {
-  const {target, rel} = attributes;
+  const {target} = attributes;
+  const rel = attributes.rel === undefined ? 'noopener' : attributes.rel;
   const selection = $getSelection();
 
   if (!$isRangeSelection(selection)) {
@@ -390,7 +385,7 @@ export function toggleLink(
         if (target !== undefined) {
           linkNode.setTarget(target);
         }
-        if (rel !== undefined) {
+        if (rel !== null) {
           linkNode.setRel(rel);
         }
         return;
@@ -417,8 +412,8 @@ export function toggleLink(
         if (target !== undefined) {
           parent.setTarget(target);
         }
-        if (rel !== undefined) {
-          parent.setRel(rel);
+        if (rel !== null) {
+          linkNode.setRel(rel);
         }
         return;
       }

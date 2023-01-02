@@ -16,6 +16,7 @@ const babel = require('@rollup/plugin-babel').default;
 const nodeResolve = require('@rollup/plugin-node-resolve').default;
 const commonjs = require('@rollup/plugin-commonjs');
 const replace = require('@rollup/plugin-replace');
+const json = require('@rollup/plugin-json');
 const extractErrorCodes = require('./error-codes/extract-errors');
 const alias = require('@rollup/plugin-alias');
 const {exec} = require('child-process-promise');
@@ -94,6 +95,7 @@ const externals = [
   'prismjs/components/prism-python',
   'prismjs/components/prism-rust',
   'prismjs/components/prism-swift',
+  'prismjs/components/prism-typescript',
   '@lexical/list',
   '@lexical/table',
   '@lexical/file',
@@ -252,6 +254,7 @@ async function build(name, inputFile, outputPath, outputFile, isProd) {
         },
       },
       commonjs(),
+      json(),
       replace(
         Object.assign(
           {

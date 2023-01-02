@@ -16,6 +16,10 @@ import type {
 } from 'lexical';
 import {addClassNamesToElement} from '@lexical/utils';
 import {$isElementNode, ElementNode} from 'lexical';
+export type LinkAttributes = {
+  rel?: null | string,
+  target?: null | string,
+};
 declare export class LinkNode extends ElementNode {
   __url: string;
   __target: null | string;
@@ -43,7 +47,10 @@ declare export class LinkNode extends ElementNode {
   setTarget(target: null | string): void;
   getRel(): null | string;
   setRel(rel: null | string): void;
-  insertNewAfter(selection: RangeSelection): null | ElementNode;
+  insertNewAfter(
+    selection: RangeSelection,
+    restoreSelection?: boolean,
+  ): null | ElementNode;
   canInsertTextBefore(): false;
   canInsertTextAfter(): false;
   canBeEmpty(): false;
@@ -51,10 +58,7 @@ declare export class LinkNode extends ElementNode {
 }
 declare export function $createLinkNode(
   url: string,
-  attributes?: {
-    rel?: null | string,
-    target?: null | string,
-  },
+  attributes?: LinkAttributes,
 ): LinkNode;
 declare export function $isLinkNode(
   node: ?LexicalNode,
@@ -63,24 +67,23 @@ declare export class AutoLinkNode extends LinkNode {
   static getType(): string;
   // $FlowFixMe clone method inheritance
   static clone(node: AutoLinkNode): AutoLinkNode;
-  insertNewAfter(selection: RangeSelection): null | ElementNode;
+  insertNewAfter(
+    selection: RangeSelection,
+    restoreSelection?: boolean,
+  ): null | ElementNode;
 }
-declare export function $createAutoLinkNode(url: string): AutoLinkNode;
+declare export function $createAutoLinkNode(
+  url: string,
+  attributes?: LinkAttributes,
+): AutoLinkNode;
 declare export function $isAutoLinkNode(
   node: ?LexicalNode,
 ): boolean %checks(node instanceof AutoLinkNode);
 
 declare export var TOGGLE_LINK_COMMAND: LexicalCommand<
-  | string
-  | {
-      url: string,
-      target?: null | string,
-      rel?: null | string,
-    }
-  | null,
+  string | {url: string, ...LinkAttributes} | null,
 >;
 declare export function toggleLink(
   url: null | string,
-  target?: null | string,
-  rel?: null | string,
+  attributes: {target?: null | string, rel?: null | string},
 ): void;

@@ -14,7 +14,6 @@ export type {
   EditableListener,
   EditorConfig,
   EditorThemeClasses,
-  IntentionallyMarkedAsDirtyElement,
   Klass,
   LexicalCommand,
   LexicalEditor,
@@ -128,7 +127,9 @@ export {
 export {$parseSerializedNode} from './LexicalUpdates';
 export {
   $addUpdateTag,
-  $getDecoratorNode,
+  $applyNodeReplacement,
+  $copyNode,
+  $getAdjacentNode,
   $getNearestNodeFromDOMNode,
   $getNearestRootOrShadowRoot,
   $getNodeByKey,
@@ -141,7 +142,6 @@ export {
   $setCompositionKey,
   $setSelection,
 } from './LexicalUtils';
-export {VERSION} from './LexicalVersion';
 export {$isDecoratorNode, DecoratorNode} from './nodes/LexicalDecoratorNode';
 export {$isElementNode, ElementNode} from './nodes/LexicalElementNode';
 export {
