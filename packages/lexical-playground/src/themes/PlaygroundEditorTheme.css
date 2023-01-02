@@ -429,16 +429,3 @@
 .PlaygroundEditorTheme__embedBlockFocus {
   outline: 2px solid rgb(60, 132, 244);
 }
-.PlaygroundEditorTheme__imageLeft {
-  float: left;
-  margin-right: 10px;
-}
-.PlaygroundEditorTheme__imageCenter {
-  float: center;
-  margin-left: 10px;
-  margin-right: 10px;
-}
-.PlaygroundEditorTheme__imageRight {
-  float: right;
-  margin-left: 10px;
-}

@@ -6,7 +6,6 @@
  *
  */
 
-import type {ImageAlign} from '../ui/ImageResizer';
 import type {
   GridSelection,
   LexicalEditor,
@@ -117,7 +116,6 @@ export default function ImageComponent({
   showCaption,
   caption,
   captionsEnabled,
-  align,
 }: {
   altText: string;
   caption: LexicalEditor;
@@ -129,7 +127,6 @@ export default function ImageComponent({
   src: string;
   width: 'inherit' | number;
   captionsEnabled: boolean;
-  align?: ImageAlign;
 }): JSX.Element {
   const imageRef = useRef<null | HTMLImageElement>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -282,15 +279,6 @@ export default function ImageComponent({
     });
   };
 
-  const setAlign = (newAlign?: ImageAlign) => {
-    editor.update(() => {
-      const node = $getNodeByKey(nodeKey);
-      if ($isImageNode(node)) {
-        node.setAlign(newAlign);
-      }
-    });
-  };
-
   const onResizeEnd = (
     nextWidth: 'inherit' | number,
     nextHeight: 'inherit' | number,
@@ -374,8 +362,6 @@ export default function ImageComponent({
           <ImageResizer
             showCaption={showCaption}
             setShowCaption={setShowCaption}
-            align={align}
-            setAlign={setAlign}
             editor={editor}
             buttonRef={buttonRef}
             imageRef={imageRef}

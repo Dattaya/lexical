@@ -6,7 +6,6 @@
  *
  */
 
-import type {ImageAlign} from '../ui/ImageResizer';
 import type {
   DOMConversionMap,
   DOMConversionOutput,
@@ -41,7 +40,6 @@ export interface ImagePayload {
   src: string;
   width?: number;
   captionsEnabled?: boolean;
-  align?: ImageAlign;
 }
 
 function convertImageElement(domNode: Node): null | DOMConversionOutput {
@@ -64,19 +62,12 @@ export type SerializedImageNode = Spread<
     width?: number;
     type: 'image';
     version: 1;
-    align?: ImageAlign;
   },
   SerializedLexicalNode
 >;
 
-const genClassName = (theme: EditorThemeClasses, align?: ImageAlign) => {
-  return joinClasses(
-    theme.image,
-    'editor-image',
-    align === 'left' && theme.imageAlign.left,
-    align === 'center' && theme.imageAlign.center,
-    align === 'right' && theme.imageAlign.right,
-  );
+const genClassName = (theme: EditorThemeClasses) => {
+  return joinClasses(theme.image, 'editor-image');
 };
 
 export class ImageNode extends DecoratorNode<JSX.Element> {
@@ -89,7 +80,6 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
   __caption: LexicalEditor;
   // Captions cannot yet be used within editor cells
   __captionsEnabled: boolean;
-  __align?: ImageAlign;
 
   static getType(): string {
     return 'image';
@@ -106,7 +96,6 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
       node.__caption,
       node.__captionsEnabled,
       node.__key,
-      node.__align,
     );
   }
 
@@ -130,7 +119,7 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
   }
 
   exportDOM(editor: LexicalEditor): DOMExportOutput {
-    const className = genClassName(editor._config.theme, this.__align);
+    const className = genClassName(editor._config.theme);
     const element = document.createElement('img');
     element.className = className;
     element.setAttribute('src', this.__src);
@@ -157,7 +146,6 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     caption?: LexicalEditor,
     captionsEnabled?: boolean,
     key?: NodeKey,
-    align?: ImageAlign,
   ) {
     super(key);
     this.__src = src;
@@ -168,12 +156,10 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     this.__showCaption = showCaption || false;
     this.__caption = caption || createEditor();
     this.__captionsEnabled = captionsEnabled || captionsEnabled === undefined;
-    this.__align = align;
   }
 
   exportJSON(): SerializedImageNode {
     return {
-      align: this.__align,
       altText: this.getAltText(),
       caption: this.__caption.toJSON(),
       height: this.__height === 'inherit' ? 0 : this.__height,
@@ -200,11 +186,6 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     writable.__showCaption = showCaption;
   }
 
-  setAlign(align?: ImageAlign): void {
-    const writable = this.getWritable();
-    writable.__align = align;
-  }
-
   setSrc(src: string): void {
     const writable = this.getWritable();
     writable.__src = src;
@@ -214,15 +195,15 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
   createDOM(config: EditorConfig): HTMLElement {
     const span = document.createElement('span');
     const theme = config.theme;
-    const className = genClassName(theme, this.__align);
+    const className = genClassName(theme);
     if (className !== undefined) {
       span.className = className;
     }
     return span;
   }
 
-  updateDOM(prevNode: ImageNode): boolean {
-    return this.__align !== prevNode.__align;
+  updateDOM(): false {
+    return false;
   }
 
   getSrc(): string {
@@ -246,7 +227,6 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
           showCaption={this.__showCaption}
           caption={this.__caption}
           captionsEnabled={this.__captionsEnabled}
-          align={this.__align}
           resizable={true}
         />
       </Suspense>
@@ -264,7 +244,6 @@ export function $createImageNode({
   showCaption,
   caption,
   key,
-  align,
 }: ImagePayload): ImageNode {
   return new ImageNode(
     src,
@@ -276,7 +255,6 @@ export function $createImageNode({
     caption,
     captionsEnabled,
     key,
-    align,
   );
 }
 

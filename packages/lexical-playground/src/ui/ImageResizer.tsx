@@ -22,8 +22,6 @@ const Direction = {
   west: 1 << 2,
 };
 
-export type ImageAlign = 'left' | 'right' | 'center';
-
 export default function ImageResizer({
   onResizeStart,
   onResizeEnd,
@@ -33,8 +31,6 @@ export default function ImageResizer({
   editor,
   showCaption,
   setShowCaption,
-  setAlign,
-  align,
   captionsEnabled,
 }: {
   editor: LexicalEditor;
@@ -45,8 +41,6 @@ export default function ImageResizer({
   onResizeStart: () => void;
   setShowCaption: (show: boolean) => void;
   showCaption: boolean;
-  align?: ImageAlign;
-  setAlign?: (newAlign?: ImageAlign) => void;
   captionsEnabled: boolean;
 }): JSX.Element {
   const controlWrapperRef = useRef<HTMLDivElement>(null);
@@ -260,34 +254,6 @@ export default function ImageResizer({
           }}>
           Add Caption
         </button>
-      )}
-      {setAlign && (
-        <div className="image-align-pane">
-          <button
-            className={align === 'left' ? 'selected' : undefined}
-            onClick={() => {
-              if (align === 'left') setAlign(undefined);
-              else setAlign('left');
-            }}>
-            <i className="format left-align" />
-          </button>
-          <button
-            className={align === 'center' ? 'selected' : undefined}
-            onClick={() => {
-              if (align === 'center') setAlign(undefined);
-              else setAlign('center');
-            }}>
-            <i className="format center-align" />
-          </button>
-          <button
-            className={align === 'right' ? 'selected' : undefined}
-            onClick={() => {
-              if (align === 'right') setAlign(undefined);
-              else setAlign('right');
-            }}>
-            <i className="format right-align" />
-          </button>
-        </div>
       )}
       <div
         className="image-resizer image-resizer-n"
