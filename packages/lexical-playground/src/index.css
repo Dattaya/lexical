@@ -36,7 +36,6 @@
 
 .editor-scroller {
   min-height: 150px;
-  height: 360px;
   border: 0;
   resize: none;
   cursor: text;
@@ -211,15 +210,14 @@ pre::-webkit-scrollbar-thumb {
   background-image: url(images/icons/download.svg);
 }
 
-#typeahead-menu {
-  position: fixed;
+.typeahead-popover {
   background: #fff;
   box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.3);
   border-radius: 8px;
-  z-index: 3;
+  margin-top: 25px;
 }
 
-#typeahead-menu ul {
+.typeahead-popover ul {
   padding: 0;
   list-style: none;
   margin: 0;
@@ -228,16 +226,16 @@ pre::-webkit-scrollbar-thumb {
   overflow-y: scroll;
 }
 
-#typeahead-menu ul::-webkit-scrollbar {
+.typeahead-popover ul::-webkit-scrollbar {
   display: none;
 }
 
-#typeahead-menu ul {
+.typeahead-popover ul {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 
-#typeahead-menu ul li {
+.typeahead-popover ul li {
   margin: 0;
   min-width: 180px;
   font-size: 14px;
@@ -246,11 +244,11 @@ pre::-webkit-scrollbar-thumb {
   border-radius: 8px;
 }
 
-#typeahead-menu ul li.selected {
+.typeahead-popover ul li.selected {
   background: #eee;
 }
 
-#typeahead-menu li {
+.typeahead-popover li {
   margin: 0 8px 0 8px;
   padding: 8px;
   color: #050505;
@@ -264,36 +262,35 @@ pre::-webkit-scrollbar-thumb {
   background-color: #fff;
   border-radius: 8px;
   border: 0;
-  max-width: 250px;
 }
 
-#typeahead-menu li.active {
+.typeahead-popover li.active {
   display: flex;
   width: 20px;
   height: 20px;
   background-size: contain;
 }
 
-#typeahead-menu li:first-child {
+.typeahead-popover li:first-child {
   border-radius: 8px 8px 0px 0px;
 }
 
-#typeahead-menu li:last-child {
+.typeahead-popover li:last-child {
   border-radius: 0px 0px 8px 8px;
 }
 
-#typeahead-menu li:hover {
+.typeahead-popover li:hover {
   background-color: #eee;
 }
 
-#typeahead-menu li .text {
+.typeahead-popover li .text {
   display: flex;
   line-height: 20px;
   flex-grow: 1;
   min-width: 150px;
 }
 
-#typeahead-menu li .icon {
+.typeahead-popover li .icon {
   display: flex;
   width: 20px;
   height: 20px;
@@ -301,6 +298,22 @@ pre::-webkit-scrollbar-thumb {
   margin-right: 8px;
   line-height: 16px;
   background-size: contain;
+}
+
+.component-picker-menu {
+  width: 200px;
+}
+
+.mentions-menu {
+  width: 250px;
+}
+
+.auto-embed-menu {
+  width: 150px;
+}
+
+.emoji-menu {
+  width: 200px;
 }
 
 i.palette {
@@ -353,6 +366,10 @@ i.horizontal-rule {
 
 .icon.plus {
   background-image: url(images/icons/plus.svg);
+}
+
+.icon.caret-right {
+  background-image: url(images/icons/caret-right-fill.svg);
 }
 
 .icon.dropdown-more {
@@ -1139,6 +1156,9 @@ i.prettier-error {
 
 .table-cell-action-button-container {
   position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
 }
 
 .table-cell-action-button {
@@ -1306,7 +1326,10 @@ button.action-button:disabled {
   opacity: 0.6;
 }
 
-.toolbar button.toolbar-item:disabled i.format {
+.toolbar button.toolbar-item:disabled .icon,
+.toolbar button.toolbar-item:disabled .text,
+.toolbar button.toolbar-item:disabled i.format,
+.toolbar button.toolbar-item:disabled .chevron-down {
   opacity: 0.2;
 }
 

@@ -29,6 +29,12 @@ declare export function $getHtmlContent(editor: LexicalEditor): string | null;
 declare export function $getLexicalContent(
   editor: LexicalEditor,
 ): string | null;
+
+declare export function $insertGeneratedNodes(
+  editor: LexicalEditor,
+  nodes: Array<LexicalNode>,
+  selection: RangeSelection | GridSelection,
+): void;
 /*
  * Plain Text
  */
@@ -61,3 +67,8 @@ declare export function $generateJSONFromSelectedNodes<
 declare export function $generateNodesFromSerializedNodes(
   serializedNodes: Array<BaseSerializedNode>,
 ): Array<LexicalNode>;
+
+declare export function copyToClipboard__EXPERIMENTAL(
+  editor: LexicalEditor,
+  event: null | ClipboardEvent,
+): Promise<boolean>;

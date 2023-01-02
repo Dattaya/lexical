@@ -64,6 +64,16 @@ const mapToPrismLanguage = (
     : undefined;
 };
 
+function hasChildDOMNodeTag(node: Node, tagName: string) {
+  for (const child of node.childNodes) {
+    if (child instanceof HTMLElement && child.tagName === tagName) {
+      return true;
+    }
+    hasChildDOMNodeTag(child, tagName);
+  }
+  return false;
+}
+
 const LANGUAGE_DATA_ATTRIBUTE = 'data-highlight-language';
 
 /** @noInheritDoc */
@@ -116,7 +126,8 @@ export class CodeNode extends ElementNode {
       // inline format handled by TextNode otherwise
       code: (node: Node) => {
         const isMultiLine =
-          node.textContent != null && /\r?\n/.test(node.textContent);
+          node.textContent != null &&
+          (/\r?\n/.test(node.textContent) || hasChildDOMNodeTag(node, 'BR'));
 
         return isMultiLine
           ? {
@@ -297,6 +308,11 @@ function convertDivElement(domNode: Node): DOMConversionOutput {
   // domNode is a <div> since we matched it by nodeName
   const div = domNode as HTMLDivElement;
   const isCode = isCodeElement(div);
+  if (!isCode && !isCodeChildElement(div)) {
+    return {
+      node: null,
+    };
+  }
   return {
     after: (childLexicalNodes) => {
       const domParent = domNode.parentNode;
@@ -334,8 +350,19 @@ function convertTableCellElement(domNode: Node): DOMConversionOutput {
   };
 }
 
-function isCodeElement(div: HTMLDivElement): boolean {
+function isCodeElement(div: HTMLElement): boolean {
   return div.style.fontFamily.match('monospace') !== null;
+}
+
+function isCodeChildElement(node: HTMLElement): boolean {
+  let parent = node.parentElement;
+  while (parent !== null) {
+    if (isCodeElement(parent)) {
+      return true;
+    }
+    parent = parent.parentElement;
+  }
+  return false;
 }
 
 function isGitHubCodeCell(

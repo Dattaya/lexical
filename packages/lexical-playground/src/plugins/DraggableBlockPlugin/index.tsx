@@ -8,6 +8,7 @@
 import './index.css';
 
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
+import {eventFiles} from '@lexical/rich-text';
 import {mergeRegister} from '@lexical/utils';
 import {
   $getNearestNodeFromDOMNode,
@@ -18,7 +19,6 @@ import {
   DROP_COMMAND,
   LexicalEditor,
 } from 'lexical';
-import {getElementByKeyOrThrow} from 'lexical/src/LexicalUtils';
 import * as React from 'react';
 import {DragEvent as ReactDragEvent, useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
@@ -71,7 +71,10 @@ function getBlockElement(
 
     while (index >= 0 && index < topLevelNodeKeys.length) {
       const key = topLevelNodeKeys[index];
-      const elem = getElementByKeyOrThrow(editor, key);
+      const elem = editor.getElementByKey(key);
+      if (elem === null) {
+        break;
+      }
       const point = new Point(event.x, event.y);
       const domRect = Rect.fromDOM(elem);
       const {marginTop, marginBottom} = window.getComputedStyle(elem);
@@ -123,8 +126,7 @@ function setMenuPosition(
 ) {
   if (!targetElem) {
     floatingElem.style.opacity = '0';
-    floatingElem.style.top = '-10000px';
-    floatingElem.style.left = '-10000px';
+    floatingElem.style.transform = 'translate(-10000px, -10000px)';
     return;
   }
 
@@ -141,8 +143,7 @@ function setMenuPosition(
   const left = SPACE;
 
   floatingElem.style.opacity = '1';
-  floatingElem.style.top = `${top}px`;
-  floatingElem.style.left = `${left}px`;
+  floatingElem.style.transform = `translate(${left}px, ${top}px)`;
 }
 
 function setDragImage(
@@ -167,22 +168,23 @@ function setTargetLine(
   anchorElem: HTMLElement,
 ) {
   const targetStyle = window.getComputedStyle(targetBlockElem);
-  const {top, height} = targetBlockElem.getBoundingClientRect();
+  const {top: targetBlockElemTop, height: targetBlockElemHeight} =
+    targetBlockElem.getBoundingClientRect();
   const {top: anchorTop, width: anchorWidth} =
     anchorElem.getBoundingClientRect();
 
-  let lineTop = top;
+  let lineTop = targetBlockElemTop;
   // At the bottom of the target
-  if (mouseY - top > height / 2) {
-    lineTop += height + parseFloat(targetStyle.marginBottom);
+  if (mouseY - targetBlockElemTop > targetBlockElemHeight / 2) {
+    lineTop += targetBlockElemHeight + parseFloat(targetStyle.marginBottom);
   } else {
     lineTop -= parseFloat(targetStyle.marginTop);
   }
 
-  targetLineElem.style.top = `${
-    lineTop - anchorTop - TARGET_LINE_HALF_HEIGHT
-  }px`;
-  targetLineElem.style.left = `${TEXT_BOX_HORIZONTAL_PADDING - SPACE}px`;
+  const top = lineTop - anchorTop - TARGET_LINE_HALF_HEIGHT;
+  const left = TEXT_BOX_HORIZONTAL_PADDING - SPACE;
+
+  targetLineElem.style.transform = `translate(${left}px, ${top}px)`;
   targetLineElem.style.width = `${
     anchorWidth - (TEXT_BOX_HORIZONTAL_PADDING - SPACE) * 2
   }px`;
@@ -192,12 +194,14 @@ function setTargetLine(
 function hideTargetLine(targetLineElem: HTMLElement | null) {
   if (targetLineElem) {
     targetLineElem.style.opacity = '0';
+    targetLineElem.style.transform = 'translate(-10000px, -10000px)';
   }
 }
 
 function useDraggableBlockMenu(
   editor: LexicalEditor,
   anchorElem: HTMLElement,
+  isEditable: boolean,
 ): JSX.Element {
   const scrollerElem = anchorElem.parentElement;
 
@@ -244,6 +248,10 @@ function useDraggableBlockMenu(
 
   useEffect(() => {
     function onDragover(event: DragEvent): boolean {
+      const [isFileTransfer] = eventFiles(event);
+      if (isFileTransfer) {
+        return false;
+      }
       const {pageY, target} = event;
       if (!isHTMLElement(target)) {
         return false;
@@ -260,6 +268,10 @@ function useDraggableBlockMenu(
     }
 
     function onDrop(event: DragEvent): boolean {
+      const [isFileTransfer] = eventFiles(event);
+      if (isFileTransfer) {
+        return false;
+      }
       const {target, dataTransfer, pageY} = event;
       const dragData = dataTransfer?.getData(DRAG_DATA_FORMAT) || '';
       const draggedNode = $getNodeByKey(dragData);
@@ -338,7 +350,7 @@ function useDraggableBlockMenu(
         draggable={true}
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}>
-        <div className="icon" />
+        <div className={isEditable ? 'icon' : ''} />
       </div>
       <div className="draggable-block-target-line" ref={targetLineRef} />
     </>,
@@ -352,5 +364,5 @@ export default function DraggableBlockPlugin({
   anchorElem?: HTMLElement;
 }): JSX.Element {
   const [editor] = useLexicalComposerContext();
-  return useDraggableBlockMenu(editor, anchorElem);
+  return useDraggableBlockMenu(editor, anchorElem, editor._editable);
 }

@@ -7,6 +7,7 @@
  */
 
 import type {
+  CommandPayloadType,
   EditorUpdateOptions,
   LexicalCommand,
   LexicalEditor,
@@ -641,10 +642,12 @@ export function triggerListeners(
   }
 }
 
-export function triggerCommandListeners<P>(
+export function triggerCommandListeners<
+  TCommand extends LexicalCommand<unknown>,
+>(
   editor: LexicalEditor,
-  type: LexicalCommand<P>,
-  payload: P,
+  type: TCommand,
+  payload: CommandPayloadType<TCommand>,
 ): boolean {
   if (editor._updating === false || activeEditor !== editor) {
     let returnVal = false;
@@ -765,6 +768,7 @@ function beginUpdate(
   let onUpdate;
   let tag;
   let skipTransforms = false;
+  let discrete = false;
 
   if (options !== undefined) {
     onUpdate = options.onUpdate;
@@ -775,6 +779,7 @@ function beginUpdate(
     }
 
     skipTransforms = options.skipTransforms || false;
+    discrete = options.discrete || false;
   }
 
   if (onUpdate) {
@@ -790,6 +795,7 @@ function beginUpdate(
       cloneEditorState(currentEditorState);
     editorStateWasCloned = true;
   }
+  pendingEditorState._flushSync = discrete;
 
   const previousActiveEditorState = activeEditorState;
   const previousReadOnlyMode = isReadOnlyMode;
@@ -801,8 +807,14 @@ function beginUpdate(
   activeEditor = editor;
 
   try {
-    if (editorStateWasCloned && !editor._headless) {
-      pendingEditorState._selection = internalCreateSelection(editor);
+    if (editorStateWasCloned) {
+      if (editor._headless) {
+        if (currentEditorState._selection != null) {
+          pendingEditorState._selection = currentEditorState._selection.clone();
+        }
+      } else {
+        pendingEditorState._selection = internalCreateSelection(editor);
+      }
     }
 
     const startingCompositionKey = editor._compositionKey;

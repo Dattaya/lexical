@@ -232,10 +232,13 @@ export class LinkNode extends ElementNode {
 function convertAnchorElement(domNode: Node): DOMConversionOutput {
   let node = null;
   if (domNode instanceof HTMLAnchorElement) {
-    node = $createLinkNode(domNode.getAttribute('href') || '', {
-      rel: domNode.getAttribute('rel'),
-      target: domNode.getAttribute('target'),
-    });
+    const content = domNode.textContent;
+    if (content !== null && content !== '') {
+      node = $createLinkNode(domNode.getAttribute('href') || '', {
+        rel: domNode.getAttribute('rel'),
+        target: domNode.getAttribute('target'),
+      });
+    }
   }
   return {node};
 }
@@ -341,7 +344,7 @@ export const TOGGLE_LINK_COMMAND: LexicalCommand<
       rel?: string;
     }
   | null
-> = createCommand();
+> = createCommand('TOGGLE_LINK_COMMAND');
 
 export function toggleLink(
   url: null | string,

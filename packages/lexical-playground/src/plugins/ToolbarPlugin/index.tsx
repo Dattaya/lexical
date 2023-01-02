@@ -6,11 +6,8 @@
  *
  */
 
-import type {InsertImagePayload} from '../ImagesPlugin';
 import type {ToolbarConfig} from '../toolbarTypes';
 import type {LexicalEditor, NodeKey} from 'lexical';
-
-import './index.css';
 
 import {
   $createCodeNode,
@@ -45,7 +42,6 @@ import {
   $selectAll,
   $wrapNodes,
 } from '@lexical/selection';
-import {INSERT_TABLE_COMMAND} from '@lexical/table';
 import {
   $findMatchingParent,
   $getNearestBlockElementAncestorOrThrow,
@@ -63,6 +59,7 @@ import {
   CAN_REDO_COMMAND,
   CAN_UNDO_COMMAND,
   COMMAND_PRIORITY_CRITICAL,
+  DEPRECATED_$isGridSelection,
   FORMAT_ELEMENT_COMMAND,
   FORMAT_TEXT_COMMAND,
   INDENT_CONTENT_COMMAND,
@@ -71,25 +68,25 @@ import {
   SELECTION_CHANGE_COMMAND,
   UNDO_COMMAND,
 } from 'lexical';
+import {useCallback, useEffect, useState} from 'react';
 import * as React from 'react';
-import {useCallback, useEffect, useRef, useState} from 'react';
 import {IS_APPLE} from 'shared/environment';
 
 import {useEditorComposerContext} from '../../EditorComposerContext';
 import useModal from '../../hooks/useModal';
-import {$isImageNode} from '../../nodes/ImageNode';
 import {$createStickyNode} from '../../nodes/StickyNode';
-import Button from '../../ui/Button';
 import ColorPicker from '../../ui/ColorPicker';
 import DropDown, {DropDownItem} from '../../ui/DropDown';
-import FileInput from '../../ui/FileInput';
-import TextInput from '../../ui/TextInput';
 import {getSelectedNode} from '../../utils/getSelectedNode';
 import {sanitizeUrl} from '../../utils/sanitizeUrl';
 import {EmbedConfigs} from '../AutoEmbedPlugin';
-import {INSERT_IMAGE_COMMAND} from '../ImagesPlugin';
-import {INSERT_POLL_COMMAND} from '../PollPlugin';
-import {INSERT_TABLE_COMMAND as INSERT_NEW_TABLE_COMMAND} from '../TablePlugin';
+import {INSERT_COLLAPSIBLE_COMMAND} from '../CollapsiblePlugin';
+import {
+  type OnImageUpload,
+  InsertImageDialog,
+} from '../ImagesPlugin';
+import {InsertPollDialog} from '../PollPlugin';
+import {InsertTableDialog} from '../TablePlugin';
 
 const blockTypeToBlockName = {
   bullet: 'Bulleted List',
@@ -143,263 +140,6 @@ const FONT_SIZE_OPTIONS: [string, string][] = [
   ['20px', '20px'],
 ];
 
-export function InsertImageUriDialogBody({
-  onClick,
-}: {
-  onClick: (payload: InsertImagePayload) => void;
-}) {
-  const [src, setSrc] = useState('');
-  const [altText, setAltText] = useState('');
-
-  const isDisabled = src === '';
-
-  return (
-    <>
-      <TextInput
-        label="Image URL"
-        placeholder="i.e. https://source.unsplash.com/random"
-        onChange={setSrc}
-        value={src}
-        data-test-id="image-modal-url-input"
-      />
-      <TextInput
-        label="Alt Text"
-        placeholder="Random unsplash image"
-        onChange={setAltText}
-        value={altText}
-        data-test-id="image-modal-alt-text-input"
-      />
-      <div className="ToolbarPlugin__dialogActions">
-        <Button
-          data-test-id="image-modal-confirm-btn"
-          disabled={isDisabled}
-          onClick={() => onClick({altText, src})}>
-          Confirm
-        </Button>
-      </div>
-    </>
-  );
-}
-
-export type OnImageUpload = (img: File, altText: string) => Promise<string>;
-export type InsertImagePayload1 = {altText: string; file: File};
-
-export function InsertImageUploadedDialogBody({
-  onClick,
-}: {
-  onClick: (payload: InsertImagePayload1) => void;
-}) {
-  const [file, setFile] = useState<File>();
-  const [altText, setAltText] = useState('');
-
-  const isDisabled = file === undefined;
-
-  const loadImage = async (files: FileList | null) => {
-    if (files) {
-      setFile(files[0]);
-    }
-  };
-
-  return (
-    <>
-      <FileInput
-        label="Image Upload"
-        onChange={loadImage}
-        accept="image/*"
-        data-test-id="image-modal-file-upload"
-      />
-      <TextInput
-        label="Alt Text"
-        placeholder="Descriptive alternative text"
-        onChange={setAltText}
-        value={altText}
-        data-test-id="image-modal-alt-text-input"
-      />
-      <div className="ToolbarPlugin__dialogActions">
-        <Button
-          data-test-id="image-modal-file-upload-btn"
-          disabled={isDisabled}
-          onClick={() => {
-            if (file) onClick({altText, file});
-          }}>
-          Confirm
-        </Button>
-      </div>
-    </>
-  );
-}
-
-export function InsertImageDialog({
-  activeEditor,
-  onClose,
-  onUpload,
-}: {
-  activeEditor: LexicalEditor;
-  onClose: () => void;
-  onUpload?: OnImageUpload;
-}): JSX.Element {
-  const [mode, setMode] = useState<null | 'url' | 'file'>(null);
-  const hasModifier = useRef(false);
-
-  useEffect(() => {
-    hasModifier.current = false;
-    const handler = (e: KeyboardEvent) => {
-      hasModifier.current = e.altKey;
-    };
-    document.addEventListener('keydown', handler);
-    return () => {
-      document.removeEventListener('keydown', handler);
-    };
-  }, [activeEditor]);
-
-  const onClick = (payload: InsertImagePayload) => {
-    activeEditor.dispatchCommand(INSERT_IMAGE_COMMAND, payload);
-    onClose();
-  };
-
-  const onUploadClick = async ({file, altText}: InsertImagePayload1) => {
-    const reader = new FileReader();
-    reader.onload = function () {
-      if (typeof reader.result === 'string') {
-        const isSuccess = activeEditor.dispatchCommand(INSERT_IMAGE_COMMAND, {
-          altText,
-          src: reader.result,
-        });
-        if (isSuccess && onUpload) {
-          activeEditor.update(async () => {
-            const selection = $getSelection();
-            const node = selection?.getNodes()[0];
-            if (node && $isImageNode(node)) {
-              try {
-                const imgUrl = await onUpload(file, altText);
-                const preloadImage = new Image();
-                preloadImage.onload = () => {
-                  activeEditor.update(() => {
-                    node.setSrc(imgUrl);
-                  });
-                };
-                preloadImage.onerror = () => {
-                  node.remove();
-                };
-                preloadImage.src = imgUrl;
-              } catch (e: unknown) {
-                node.remove();
-              }
-            }
-          });
-        }
-      }
-    };
-    reader.readAsDataURL(file);
-    onClose();
-  };
-
-  return (
-    <>
-      {!mode && (
-        <div className="ToolbarPlugin__dialogButtonsList">
-          <Button
-            data-test-id="image-modal-option-url"
-            onClick={() => setMode('url')}>
-            URL
-          </Button>
-          <Button
-            data-test-id="image-modal-option-file"
-            onClick={() => setMode('file')}>
-            File
-          </Button>
-        </div>
-      )}
-      {mode === 'url' && <InsertImageUriDialogBody onClick={onClick} />}
-      {mode === 'file' && (
-        <InsertImageUploadedDialogBody onClick={onUploadClick} />
-      )}
-    </>
-  );
-}
-
-export function InsertTableDialog({
-  activeEditor,
-  onClose,
-}: {
-  activeEditor: LexicalEditor;
-  onClose: () => void;
-}): JSX.Element {
-  const [rows, setRows] = useState('5');
-  const [columns, setColumns] = useState('5');
-
-  const onClick = () => {
-    activeEditor.dispatchCommand(INSERT_TABLE_COMMAND, {columns, rows});
-    onClose();
-  };
-
-  return (
-    <>
-      <TextInput label="No of rows" onChange={setRows} value={rows} />
-      <TextInput label="No of columns" onChange={setColumns} value={columns} />
-      <div
-        className="ToolbarPlugin__dialogActions"
-        data-test-id="table-model-confirm-insert">
-        <Button onClick={onClick}>Confirm</Button>
-      </div>
-    </>
-  );
-}
-
-export function InsertNewTableDialog({
-  activeEditor,
-  onClose,
-}: {
-  activeEditor: LexicalEditor;
-  onClose: () => void;
-}): JSX.Element {
-  const [rows, setRows] = useState('5');
-  const [columns, setColumns] = useState('5');
-
-  const onClick = () => {
-    activeEditor.dispatchCommand(INSERT_NEW_TABLE_COMMAND, {columns, rows});
-    onClose();
-  };
-
-  return (
-    <>
-      <TextInput label="No of rows" onChange={setRows} value={rows} />
-      <TextInput label="No of columns" onChange={setColumns} value={columns} />
-      <div
-        className="ToolbarPlugin__dialogActions"
-        data-test-id="table-model-confirm-insert">
-        <Button onClick={onClick}>Confirm</Button>
-      </div>
-    </>
-  );
-}
-
-export function InsertPollDialog({
-  activeEditor,
-  onClose,
-}: {
-  activeEditor: LexicalEditor;
-  onClose: () => void;
-}): JSX.Element {
-  const [question, setQuestion] = useState('');
-
-  const onClick = () => {
-    activeEditor.dispatchCommand(INSERT_POLL_COMMAND, question);
-    onClose();
-  };
-
-  return (
-    <>
-      <TextInput label="Question" onChange={setQuestion} value={question} />
-      <div className="ToolbarPlugin__dialogActions">
-        <Button disabled={question.trim() === ''} onClick={onClick}>
-          Confirm
-        </Button>
-      </div>
-    </>
-  );
-}
-
 function dropDownActiveClass(active: boolean) {
   if (active) return 'active dropdown-item-active';
   else return '';
@@ -408,16 +148,21 @@ function dropDownActiveClass(active: boolean) {
 function BlockFormatDropDown({
   editor,
   blockType,
+  disabled = false,
 }: {
   blockType: keyof typeof blockTypeToBlockName;
   editor: LexicalEditor;
+  disabled?: boolean;
 }): JSX.Element {
   const formatParagraph = () => {
     if (blockType !== 'paragraph') {
       editor.update(() => {
         const selection = $getSelection();
 
-        if ($isRangeSelection(selection)) {
+        if (
+          $isRangeSelection(selection) ||
+          DEPRECATED_$isGridSelection(selection)
+        ) {
           $wrapNodes(selection, () => $createParagraphNode());
         }
       });
@@ -429,7 +174,10 @@ function BlockFormatDropDown({
       editor.update(() => {
         const selection = $getSelection();
 
-        if ($isRangeSelection(selection)) {
+        if (
+          $isRangeSelection(selection) ||
+          DEPRECATED_$isGridSelection(selection)
+        ) {
           $wrapNodes(selection, () => $createHeadingNode(headingSize));
         }
       });
@@ -465,7 +213,10 @@ function BlockFormatDropDown({
       editor.update(() => {
         const selection = $getSelection();
 
-        if ($isRangeSelection(selection)) {
+        if (
+          $isRangeSelection(selection) ||
+          DEPRECATED_$isGridSelection(selection)
+        ) {
           $wrapNodes(selection, () => $createQuoteNode());
         }
       });
@@ -477,7 +228,10 @@ function BlockFormatDropDown({
       editor.update(() => {
         const selection = $getSelection();
 
-        if ($isRangeSelection(selection)) {
+        if (
+          $isRangeSelection(selection) ||
+          DEPRECATED_$isGridSelection(selection)
+        ) {
           if (selection.isCollapsed()) {
             $wrapNodes(selection, () => $createCodeNode());
           } else {
@@ -493,6 +247,7 @@ function BlockFormatDropDown({
 
   return (
     <DropDown
+      disabled={disabled}
       buttonClassName="toolbar-item block-controls"
       buttonIconClassName={'icon block-type ' + blockType}
       buttonLabel={blockTypeToBlockName[blockType]}
@@ -563,11 +318,13 @@ function FontDropDown({
   editor,
   value,
   style,
+  disabled = false,
   options,
 }: {
   editor: LexicalEditor;
   value: string;
   style: string;
+  disabled?: boolean;
   options: [string, string][];
 }): JSX.Element {
   const handleClick = useCallback(
@@ -591,6 +348,7 @@ function FontDropDown({
 
   return (
     <DropDown
+      disabled={disabled}
       buttonClassName={'toolbar-item ' + style}
       buttonLabel={value}
       buttonIconClassName={
@@ -649,6 +407,7 @@ export default function ToolbarPlugin({
   const [modal, showModal] = useModal();
   const [isRTL, setIsRTL] = useState(false);
   const [codeLanguage, setCodeLanguage] = useState<string>('');
+  const [isEditable, setIsEditable] = useState(() => editor.isEditable());
 
   const editorContext = useEditorComposerContext();
 
@@ -756,6 +515,9 @@ export default function ToolbarPlugin({
 
   useEffect(() => {
     return mergeRegister(
+      editor.registerEditableListener((editable) => {
+        setIsEditable(editable);
+      }),
       activeEditor.registerUpdateListener(({editorState}) => {
         editorState.read(() => {
           updateToolbar();
@@ -778,7 +540,7 @@ export default function ToolbarPlugin({
         COMMAND_PRIORITY_CRITICAL,
       ),
     );
-  }, [activeEditor, updateToolbar]);
+  }, [activeEditor, editor, updateToolbar]);
 
   const applyStyleText = useCallback(
     (styles: Record<string, string>) => {
@@ -852,7 +614,7 @@ export default function ToolbarPlugin({
       {config.undoRedo && (
         <>
           <button
-            disabled={!canUndo}
+            disabled={!canUndo || !isEditable}
             onClick={() => {
               activeEditor.dispatchCommand(UNDO_COMMAND, undefined);
             }}
@@ -862,7 +624,7 @@ export default function ToolbarPlugin({
             <i className="format undo" />
           </button>
           <button
-            disabled={!canRedo}
+            disabled={!canRedo || !isEditable}
             onClick={() => {
               activeEditor.dispatchCommand(REDO_COMMAND, undefined);
             }}
@@ -874,17 +636,20 @@ export default function ToolbarPlugin({
         </>
       )}
       <Divider />
-      {config.formatBlockOptions &&
-        blockType in blockTypeToBlockName &&
-        activeEditor === editor && (
-          <>
-            <BlockFormatDropDown blockType={blockType} editor={editor} />
-            <Divider />
-          </>
-        )}
+      {blockType in blockTypeToBlockName && activeEditor === editor && (
+        <>
+          <BlockFormatDropDown
+            disabled={!isEditable}
+            blockType={blockType}
+            editor={editor}
+          />
+          <Divider />
+        </>
+      )}
       {blockType === 'code' ? (
         <>
           <DropDown
+            disabled={!isEditable}
             buttonClassName="toolbar-item code-language"
             buttonLabel={getLanguageFriendlyName(codeLanguage)}
             buttonAriaLabel="Select language">
@@ -906,6 +671,7 @@ export default function ToolbarPlugin({
         <>
           {Boolean(config.fontFamilyOptions) && (
             <FontDropDown
+              disabled={!isEditable}
               style={'font-family'}
               value={fontFamily}
               editor={editor}
@@ -914,6 +680,7 @@ export default function ToolbarPlugin({
           )}
           {config.fontSizeOptions && (
             <FontDropDown
+              disabled={!isEditable}
               style={'font-size'}
               value={fontSize}
               editor={editor}
@@ -924,6 +691,7 @@ export default function ToolbarPlugin({
           {config.biu && (
             <>
               <button
+                disabled={!isEditable}
                 onClick={() => {
                   activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
                 }}
@@ -935,6 +703,7 @@ export default function ToolbarPlugin({
                 <i className="format bold" />
               </button>
               <button
+                disabled={!isEditable}
                 onClick={() => {
                   activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic');
                 }}
@@ -946,6 +715,7 @@ export default function ToolbarPlugin({
                 <i className="format italic" />
               </button>
               <button
+                disabled={!isEditable}
                 onClick={() => {
                   activeEditor.dispatchCommand(
                     FORMAT_TEXT_COMMAND,
@@ -965,6 +735,7 @@ export default function ToolbarPlugin({
           )}
           {config.codeBlock && (
             <button
+              disabled={!isEditable}
               onClick={() => {
                 activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code');
               }}
@@ -976,6 +747,7 @@ export default function ToolbarPlugin({
           )}
           {config.link && (
             <button
+              disabled={!isEditable}
               onClick={insertLink}
               className={'toolbar-item spaced ' + (isLink ? 'active' : '')}
               aria-label="Insert link"
@@ -985,6 +757,7 @@ export default function ToolbarPlugin({
           )}
           {config.textColorPicker && (
             <ColorPicker
+              disabled={!isEditable}
               buttonClassName="toolbar-item color-picker"
               buttonAriaLabel="Formatting text color"
               buttonIconClassName="icon font-color"
@@ -995,6 +768,7 @@ export default function ToolbarPlugin({
           )}
           {config.bgColorPicker && (
             <ColorPicker
+              disabled={!isEditable}
               buttonClassName="toolbar-item color-picker"
               buttonAriaLabel="Formatting background color"
               buttonIconClassName="icon bg-color"
@@ -1005,6 +779,7 @@ export default function ToolbarPlugin({
           )}
           {config.formatTextOptions && (
             <DropDown
+              disabled={!isEditable}
               buttonClassName="toolbar-item spaced"
               buttonLabel=""
               buttonAriaLabel="Formatting options for additional text styles"
@@ -1061,6 +836,7 @@ export default function ToolbarPlugin({
           <Divider />
           {config?.insertOptions && (
             <DropDown
+              disabled={!isEditable}
               buttonClassName="toolbar-item spaced"
               buttonLabel="Insert"
               buttonAriaLabel="Insert specialized editor node"
@@ -1128,6 +904,14 @@ export default function ToolbarPlugin({
                 <i className="icon sticky" />
                 <span className="text">Sticky Note</span>
               </DropDownItem>
+              <DropDownItem
+                onClick={() => {
+                  editor.dispatchCommand(INSERT_COLLAPSIBLE_COMMAND, undefined);
+                }}
+                className="item">
+                <i className="icon caret-right" />
+                <span className="text">Collapsible container</span>
+              </DropDownItem>
               {EmbedConfigs.map((embedConfig) => (
                 <DropDownItem
                   key={embedConfig.type}
@@ -1158,6 +942,7 @@ export default function ToolbarPlugin({
       <Divider />
       {config.align && (
         <DropDown
+          disabled={!isEditable}
           buttonLabel="Align"
           buttonIconClassName="icon left-align"
           buttonClassName="toolbar-item spaced alignment"

@@ -50,8 +50,10 @@ import {
 import {
   $getCompositionKey,
   $getDecoratorNode,
+  $getNearestRootOrShadowRoot,
   $getNodeByKey,
   $getRoot,
+  $hasAncestor,
   $isRootOrShadowRoot,
   $isTokenOrSegmented,
   $setCompositionKey,
@@ -395,7 +397,11 @@ export class GridSelection implements BaseSelection {
     if (!DEPRECATED_$isGridSelection(selection)) {
       return false;
     }
-    return this.gridKey === selection.gridKey && this.anchor.is(this.focus);
+    return (
+      this.gridKey === selection.gridKey &&
+      this.anchor.is(selection.anchor) &&
+      this.focus.is(selection.focus)
+    );
   }
 
   set(gridKey: NodeKey, anchorCellKey: NodeKey, focusCellKey: NodeKey): void {
@@ -597,10 +603,7 @@ export class RangeSelection implements BaseSelection {
     let nodes: Array<LexicalNode>;
 
     if (firstNode.is(lastNode)) {
-      if (
-        $isElementNode(firstNode) &&
-        (firstNode.getChildrenSize() > 0 || firstNode.excludeFromCopy())
-      ) {
+      if ($isElementNode(firstNode) && firstNode.getChildrenSize() > 0) {
         nodes = [];
       } else {
         nodes = [firstNode];
@@ -1193,7 +1196,37 @@ export class RangeSelection implements BaseSelection {
   insertNodes(nodes: Array<LexicalNode>, selectStart?: boolean): boolean {
     // If there is a range selected remove the text in it
     if (!this.isCollapsed()) {
+      const selectionEnd = this.isBackward() ? this.anchor : this.focus;
+
+      const nextSibling = selectionEnd.getNode().getNextSibling();
+      const nextSiblingKey = nextSibling ? nextSibling.getKey() : null;
+
+      const prevSibling = selectionEnd.getNode().getPreviousSibling();
+      const prevSiblingKey = prevSibling ? prevSibling.getKey() : null;
+
       this.removeText();
+
+      // If the selection has been moved to an adjacent inline element, create
+      // a temporary text node that we can insert the nodes after.
+      if (this.isCollapsed() && this.focus.type === 'element') {
+        let textNode;
+
+        if (this.focus.key === nextSiblingKey && this.focus.offset === 0) {
+          textNode = $createTextNode();
+          this.focus.getNode().insertBefore(textNode);
+        } else if (
+          this.focus.key === prevSiblingKey &&
+          this.focus.offset === this.focus.getNode().getChildrenSize()
+        ) {
+          textNode = $createTextNode();
+          this.focus.getNode().insertAfter(textNode);
+        }
+
+        if (textNode) {
+          this.focus.set(textNode.__key, 0, 'text');
+          this.anchor.set(textNode.__key, 0, 'text');
+        }
+      }
     }
     const anchor = this.anchor;
     const anchorOffset = anchor.offset;
@@ -1257,7 +1290,11 @@ export class RangeSelection implements BaseSelection {
     // Time to insert the nodes!
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i];
-      if ($isElementNode(node) && !node.isInline()) {
+      if (
+        !$isDecoratorNode(target) &&
+        $isElementNode(node) &&
+        !node.isInline()
+      ) {
         // -----
         // Heuristics for the replacement or merging of elements
         // -----
@@ -1366,7 +1403,7 @@ export class RangeSelection implements BaseSelection {
           if (!node.canBeEmpty() && node.isEmpty()) {
             continue;
           }
-          if ($isRootOrShadowRoot(target)) {
+          if ($isRootNode(target)) {
             const placementNode = target.getChildAtIndex(anchorOffset);
             if (placementNode !== null) {
               placementNode.insertBefore(node);
@@ -1682,7 +1719,7 @@ export class RangeSelection implements BaseSelection {
     if ($isDecoratorNode(possibleNode) && !possibleNode.isIsolated()) {
       // Make it possible to move selection from range selection to
       // node selection on the node.
-      if (collapse) {
+      if (collapse && possibleNode.isKeyboardSelectable()) {
         const nodeSelection = $createNodeSelection();
         nodeSelection.add(possibleNode.__key);
         $setSelection(nodeSelection);
@@ -1734,7 +1771,7 @@ export class RangeSelection implements BaseSelection {
     // from getTargetRanges(), and is also better than trying to do it ourselves
     // using Intl.Segmenter or other workarounds that struggle with word segments
     // and line segments (especially with word wrapping and non-Roman languages).
-    $moveNativeSelection(
+    moveNativeSelection(
       domSelection,
       alter,
       isBackward ? 'backward' : 'forward',
@@ -1744,17 +1781,51 @@ export class RangeSelection implements BaseSelection {
     if (domSelection.rangeCount > 0) {
       const range = domSelection.getRangeAt(0);
       // Apply the DOM selection to our Lexical selection.
+      const root = $getNearestRootOrShadowRoot(this.anchor.getNode());
       this.applyDOMRange(range);
       this.dirty = true;
-      // Because a range works on start and end, we might need to flip
-      // the anchor and focus points to match what the DOM has, not what
-      // the range has specifically.
-      if (
-        !collapse &&
-        (domSelection.anchorNode !== range.startContainer ||
-          domSelection.anchorOffset !== range.startOffset)
-      ) {
-        $swapPoints(this);
+      if (!collapse) {
+        // Validate selection; make sure that the new extended selection respects shadow roots
+        const nodes = this.getNodes();
+        const validNodes = [];
+        let shrinkSelection = false;
+        for (let i = 0; i < nodes.length; i++) {
+          const nextNode = nodes[i];
+          if ($hasAncestor(nextNode, root)) {
+            validNodes.push(nextNode);
+          } else {
+            shrinkSelection = true;
+          }
+        }
+        if (shrinkSelection && validNodes.length > 0) {
+          // validNodes length check is a safeguard against an invalid selection; as getNodes()
+          // will return an empty array in this case
+          if (isBackward) {
+            const firstValidNode = validNodes[0];
+            if ($isElementNode(firstValidNode)) {
+              firstValidNode.selectStart();
+            } else {
+              firstValidNode.getParentOrThrow().selectStart();
+            }
+          } else {
+            const lastValidNode = validNodes[validNodes.length - 1];
+            if ($isElementNode(lastValidNode)) {
+              lastValidNode.selectEnd();
+            } else {
+              lastValidNode.getParentOrThrow().selectEnd();
+            }
+          }
+        }
+
+        // Because a range works on start and end, we might need to flip
+        // the anchor and focus points to match what the DOM has, not what
+        // the range has specifically.
+        if (
+          domSelection.anchorNode !== range.startContainer ||
+          domSelection.anchorOffset !== range.startOffset
+        ) {
+          $swapPoints(this);
+        }
       }
     }
   }
@@ -1894,7 +1965,7 @@ function $swapPoints(selection: RangeSelection): void {
   selection._cachedNodes = null;
 }
 
-function $moveNativeSelection(
+function moveNativeSelection(
   domSelection: Selection,
   alter: 'move' | 'extend',
   direction: 'backward' | 'forward' | 'left' | 'right',
@@ -2339,6 +2410,7 @@ export function internalCreateRangeSelection(
       (eventType === 'click' &&
         windowEvent &&
         (windowEvent as InputEvent).detail === 3) ||
+      eventType === 'drop' ||
       eventType === undefined);
   let anchorDOM, focusDOM, anchorOffset, focusOffset;
 
@@ -2708,6 +2780,7 @@ export function updateDOMSelection(
     );
 
     if (
+      !tags.has('skip-scroll-into-view') &&
       nextSelection.isCollapsed() &&
       rootElement !== null &&
       rootElement === activeElement
@@ -2732,4 +2805,12 @@ export function $insertNodes(
     selection = $getRoot().selectEnd();
   }
   return selection.insertNodes(nodes, selectStart);
+}
+
+export function $getTextContent(): string {
+  const selection = $getSelection();
+  if (selection === null) {
+    return '';
+  }
+  return selection.getTextContent();
 }

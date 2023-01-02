@@ -13,19 +13,20 @@ import type {
   DOMConversionOutput,
   EditorConfig,
   ElementFormatType,
+  LexicalCommand,
   LexicalEditor,
   LexicalNode,
   NodeKey,
   ParagraphNode,
+  PasteCommandType,
   SerializedElementNode,
   Spread,
   TextFormatType,
 } from 'lexical';
 
 import {
-  $getHtmlContent,
-  $getLexicalContent,
   $insertDataTransferForRichText,
+  copyToClipboard__EXPERIMENTAL,
 } from '@lexical/clipboard';
 import {
   $moveCharacter,
@@ -38,6 +39,7 @@ import {
 } from '@lexical/utils';
 import {
   $createParagraphNode,
+  $createRangeSelection,
   $getNearestNodeFromDOMNode,
   $getSelection,
   $isDecoratorNode,
@@ -45,15 +47,19 @@ import {
   $isRangeSelection,
   $isRootNode,
   $isTextNode,
+  $normalizeSelection__EXPERIMENTAL,
+  $setSelection,
   CLICK_COMMAND,
   COMMAND_PRIORITY_EDITOR,
   CONTROLLED_TEXT_INSERTION_COMMAND,
   COPY_COMMAND,
+  createCommand,
   CUT_COMMAND,
   DELETE_CHARACTER_COMMAND,
   DELETE_LINE_COMMAND,
   DELETE_WORD_COMMAND,
   DEPRECATED_$isGridSelection,
+  DRAGOVER_COMMAND,
   DRAGSTART_COMMAND,
   DROP_COMMAND,
   ElementNode,
@@ -75,6 +81,7 @@ import {
   PASTE_COMMAND,
   REMOVE_TEXT_COMMAND,
 } from 'lexical';
+import caretFromPoint from 'shared/caretFromPoint';
 import {CAN_USE_BEFORE_INPUT, IS_IOS, IS_SAFARI} from 'shared/environment';
 
 export type SerializedHeadingNode = Spread<
@@ -85,6 +92,10 @@ export type SerializedHeadingNode = Spread<
   },
   SerializedElementNode
 >;
+
+export const DRAG_DROP_PASTE: LexicalCommand<Array<File>> = createCommand(
+  'DRAG_DROP_PASTE_FILE',
+);
 
 export type SerializedQuoteNode = Spread<
   {
@@ -267,7 +278,6 @@ export class HeadingNode extends ElementNode {
       },
     };
   }
-
   static importJSON(serializedNode: SerializedHeadingNode): HeadingNode {
     const node = $createHeadingNode(serializedNode.tag);
     node.setFormat(serializedNode.format);
@@ -371,56 +381,44 @@ function onPasteForRichText(
   );
 }
 
-function onCopyForRichText(
-  event: CommandPayloadType<typeof COPY_COMMAND>,
-  editor: LexicalEditor,
-): void {
-  const selection = $getSelection();
-  if (selection !== null) {
-    event.preventDefault();
-    const clipboardData =
-      event instanceof KeyboardEvent ? null : event.clipboardData;
-    const htmlString = $getHtmlContent(editor);
-    const lexicalString = $getLexicalContent(editor);
-
-    if (clipboardData != null) {
-      if (htmlString !== null) {
-        clipboardData.setData('text/html', htmlString);
-      }
-      if (lexicalString !== null) {
-        clipboardData.setData('application/x-lexical-editor', lexicalString);
-      }
-      const plainString = selection.getTextContent();
-      clipboardData.setData('text/plain', plainString);
-    } else {
-      const clipboard = navigator.clipboard;
-      if (clipboard != null) {
-        // Most browsers only support a single item in the clipboard at one time.
-        // So we optimize by only putting in HTML.
-        const data = [
-          new ClipboardItem({
-            'text/html': new Blob([htmlString as BlobPart], {
-              type: 'text/html',
-            }),
-          }),
-        ];
-        clipboard.write(data);
-      }
-    }
-  }
-}
-
-function onCutForRichText(
+async function onCutForRichText(
   event: CommandPayloadType<typeof CUT_COMMAND>,
   editor: LexicalEditor,
-): void {
-  onCopyForRichText(event, editor);
-  const selection = $getSelection();
-  if ($isRangeSelection(selection)) {
-    selection.removeText();
-  } else if ($isNodeSelection(selection)) {
-    selection.getNodes().forEach((node) => node.remove());
+): Promise<void> {
+  if (editor.getEditorState().read(() => $getSelection()) == null) {
+    return;
   }
+  await copyToClipboard__EXPERIMENTAL(
+    editor,
+    event instanceof ClipboardEvent ? event : null,
+  );
+  editor.update(() => {
+    const selection = $getSelection();
+    if ($isRangeSelection(selection)) {
+      selection.removeText();
+    } else if ($isNodeSelection(selection)) {
+      selection.getNodes().forEach((node) => node.remove());
+    }
+  });
+}
+
+// Clipboard may contain files that we aren't allowed to read. While the event is arguably useless,
+// in certain ocassions, we want to know whether it was a file transfer, as opposed to text. We
+// control this with the first boolean flag.
+export function eventFiles(
+  event: DragEvent | PasteCommandType,
+): [boolean, Array<File>] {
+  let dataTransfer: null | DataTransfer = null;
+  if (event instanceof DragEvent) {
+    dataTransfer = event.dataTransfer;
+  } else if (event instanceof ClipboardEvent) {
+    dataTransfer = event.clipboardData;
+  }
+
+  if (dataTransfer === null) {
+    return [false, []];
+  }
+  return [dataTransfer.types.includes('Files'), Array.from(dataTransfer.files)];
 }
 
 function handleIndentAndOutdent(
@@ -839,8 +837,61 @@ export function registerRichText(editor: LexicalEditor): () => void {
     editor.registerCommand<DragEvent>(
       DROP_COMMAND,
       (event) => {
+        const [, files] = eventFiles(event);
+        if (files.length > 0) {
+          const x = event.clientX;
+          const y = event.clientY;
+          const eventRange = caretFromPoint(x, y);
+          if (eventRange !== null) {
+            const {startOffset, endOffset, startContainer, endContainer} =
+              eventRange;
+            const startNode = $getNearestNodeFromDOMNode(startContainer);
+            const endNode = $getNearestNodeFromDOMNode(endContainer);
+            if (startNode !== null && endNode !== null) {
+              const selection = $createRangeSelection();
+              if ($isTextNode(startNode)) {
+                selection.anchor.set(startNode.getKey(), startOffset, 'text');
+              } else {
+                selection.anchor.set(
+                  startNode.getParentOrThrow().getKey(),
+                  startNode.getIndexWithinParent() + 1,
+                  'element',
+                );
+              }
+              if ($isTextNode(endNode)) {
+                selection.focus.set(endNode.getKey(), endOffset, 'text');
+              } else {
+                selection.focus.set(
+                  endNode.getParentOrThrow().getKey(),
+                  endNode.getIndexWithinParent() + 1,
+                  'element',
+                );
+              }
+              const normalizedSelection =
+                $normalizeSelection__EXPERIMENTAL(selection);
+              $setSelection(normalizedSelection);
+            }
+            editor.dispatchCommand(DRAG_DROP_PASTE, files);
+          }
+          event.preventDefault();
+          return true;
+        }
+
         const selection = $getSelection();
-        if (!$isRangeSelection(selection)) {
+        if ($isRangeSelection(selection)) {
+          return true;
+        }
+
+        return false;
+      },
+      COMMAND_PRIORITY_EDITOR,
+    ),
+    editor.registerCommand<DragEvent>(
+      DRAGSTART_COMMAND,
+      (event) => {
+        const [isFileTransfer] = eventFiles(event);
+        const selection = $getSelection();
+        if (isFileTransfer && !$isRangeSelection(selection)) {
           return false;
         }
         event.preventDefault();
@@ -849,10 +900,11 @@ export function registerRichText(editor: LexicalEditor): () => void {
       COMMAND_PRIORITY_EDITOR,
     ),
     editor.registerCommand<DragEvent>(
-      DRAGSTART_COMMAND,
+      DRAGOVER_COMMAND,
       (event) => {
+        const [isFileTransfer] = eventFiles(event);
         const selection = $getSelection();
-        if (!$isRangeSelection(selection)) {
+        if (isFileTransfer && !$isRangeSelection(selection)) {
           return false;
         }
         event.preventDefault();
@@ -863,7 +915,10 @@ export function registerRichText(editor: LexicalEditor): () => void {
     editor.registerCommand(
       COPY_COMMAND,
       (event) => {
-        onCopyForRichText(event, editor);
+        copyToClipboard__EXPERIMENTAL(
+          editor,
+          event instanceof ClipboardEvent ? event : null,
+        );
         return true;
       },
       COMMAND_PRIORITY_EDITOR,
@@ -879,6 +934,12 @@ export function registerRichText(editor: LexicalEditor): () => void {
     editor.registerCommand(
       PASTE_COMMAND,
       (event) => {
+        const [, files] = eventFiles(event);
+        if (files !== null && files.length > 0) {
+          editor.dispatchCommand(DRAG_DROP_PASTE, files);
+          return true;
+        }
+
         const selection = $getSelection();
         if (
           $isRangeSelection(selection) ||
@@ -887,6 +948,7 @@ export function registerRichText(editor: LexicalEditor): () => void {
           onPasteForRichText(event, editor);
           return true;
         }
+
         return false;
       },
       COMMAND_PRIORITY_EDITOR,

@@ -16,6 +16,7 @@ import {CharacterLimitPlugin} from '@lexical/react/LexicalCharacterLimitPlugin';
 import {CheckListPlugin} from '@lexical/react/LexicalCheckListPlugin';
 import {ClearEditorPlugin} from '@lexical/react/LexicalClearEditorPlugin';
 import {CollaborationPlugin} from '@lexical/react/LexicalCollaborationPlugin';
+import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
 import {HashtagPlugin} from '@lexical/react/LexicalHashtagPlugin';
 import {HistoryPlugin} from '@lexical/react/LexicalHistoryPlugin';
 import {LinkPlugin} from '@lexical/react/LexicalLinkPlugin';
@@ -37,8 +38,12 @@ import AutoLinkPlugin from './plugins/AutoLinkPlugin';
 import ClickableLinkPlugin from './plugins/ClickableLinkPlugin';
 import CodeActionMenuPlugin from './plugins/CodeActionMenuPlugin';
 import CodeHighlightPlugin from './plugins/CodeHighlightPlugin';
+import CollapsiblePlugin from './plugins/CollapsiblePlugin';
+// import CommentPlugin from './plugins/CommentPlugin';
 // import ComponentPickerPlugin from './plugins/ComponentPickerPlugin';
+import DragDropPaste from './plugins/DragDropPastePlugin';
 import DraggableBlockPlugin from './plugins/DraggableBlockPlugin';
+import EmojiPickerPlugin from './plugins/EmojiPickerPlugin';
 import EmojisPlugin from './plugins/EmojisPlugin';
 import FigmaPlugin from './plugins/FigmaPlugin';
 import FloatingLinkEditorPlugin from './plugins/FloatingLinkEditorPlugin';
@@ -150,8 +155,11 @@ export default function Editor({
         }`}
         ref={scrollRef}>
         {isMaxLength && <MaxLengthPlugin maxLength={30} />}
+        <DragDropPaste />
         <AutoFocusPlugin />
         <ClearEditorPlugin />
+        {/* <ComponentPickerPlugin /> */}
+        <EmojiPickerPlugin />
         <AutoEmbedPlugin />
         <MentionsPlugin />
         <EmojisPlugin />
@@ -197,6 +205,7 @@ export default function Editor({
                 </div>
               }
               placeholder={placeholder}
+              ErrorBoundary={LexicalErrorBoundary}
             />
             <MarkdownShortcutPlugin />
             <CodeHighlightPlugin />
@@ -214,6 +223,7 @@ export default function Editor({
             <ClickableLinkPlugin />
             <HorizontalRulePlugin />
             <TabFocusPlugin />
+            <CollapsiblePlugin />
             {floatingAnchorElem && (
               <>
                 <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
@@ -235,6 +245,7 @@ export default function Editor({
             <PlainTextPlugin
               contentEditable={<ContentEditable />}
               placeholder={placeholder}
+              ErrorBoundary={LexicalErrorBoundary}
             />
             <HistoryPlugin externalHistoryState={historyState} />
           </>
@@ -244,9 +255,6 @@ export default function Editor({
         )}
         {isAutocomplete && <AutocompletePlugin />}
         <div>{showTableOfContents && <TableOfContentsPlugin />}</div>
-        <div className="toc">
-          {showTableOfContents && <TableOfContentsPlugin />}
-        </div>
         <ActionsPlugin isRichText={isRichText} />
       </div>
       {showTreeView && <TreeViewPlugin />}

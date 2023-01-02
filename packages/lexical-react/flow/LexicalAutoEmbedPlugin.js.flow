@@ -13,6 +13,7 @@ import {TypeaheadOption} from '@lexical/react/LexicalTypeaheadMenuPlugin';
 import type {LexicalCommand, LexicalEditor, NodeKey, TextNode} from 'lexical';
 import * as React from 'react';
 import {createCommand} from 'lexical';
+import type {MenuRenderFn} from './LexicalTypeaheadMenuPlugin';
 
 export type EmbedMatchResult = {
   url: string,
@@ -32,26 +33,17 @@ export const URL_MATCHER: RegExp =
   /((https?:\/\/(www\.)?)|(www\.))[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/;
 
 export const INSERT_EMBED_COMMAND: LexicalCommand<EmbedConfig['type']> =
-  createCommand();
-
-export type EmbedMenuProps = {
-  selectedItemIndex: number | null,
-  onOptionClick: (option: AutoEmbedOption, index: number) => void,
-  onOptionMouseEnter: (index: number) => void,
-  options: Array<AutoEmbedOption>,
-};
-
-export type EmbedMenuComponent = React.ComponentType<EmbedMenuProps>;
+  createCommand('INSERT_EMBED_COMMAND');
 
 type LexicalAutoEmbedPluginProps<TEmbedConfig> = {
   embedConfigs: Array<TEmbedConfig>,
   onOpenEmbedModalForConfig: (embedConfig: TEmbedConfig) => void,
-  menuComponent: EmbedMenuComponent,
   getMenuOptions: (
     activeEmbedConfig: TEmbedConfig,
     embedFn: () => void,
     dismissFn: () => void,
   ) => Array<AutoEmbedOption>,
+  menuRenderFn: MenuRenderFn<AutoEmbedOption>,
 };
 
 declare export class AutoEmbedOption extends TypeaheadOption {

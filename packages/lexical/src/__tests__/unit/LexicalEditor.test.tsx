@@ -6,8 +6,9 @@
  *
  */
 
-import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
+import {useLexicalComposerContext} from '@lexical/react/src/LexicalComposerContext';
 import {ContentEditable} from '@lexical/react/src/LexicalContentEditable';
+import LexicalErrorBoundary from '@lexical/react/src/LexicalErrorBoundary';
 import {RichTextPlugin} from '@lexical/react/src/LexicalRichTextPlugin';
 import {
   $createTableCellNode,
@@ -54,6 +55,7 @@ import {getEditorStateTextContent} from '../../LexicalUtils';
 import {
   $createTestDecoratorNode,
   $createTestElementNode,
+  $createTestInlineElementNode,
   createTestEditor,
   TestComposer,
 } from '../utils';
@@ -62,7 +64,7 @@ import {
 global.IS_REACT_ACT_ENVIRONMENT = true;
 
 describe('LexicalEditor tests', () => {
-  let container = null;
+  let container: HTMLElement;
   let reactRoot;
 
   beforeEach(() => {
@@ -993,6 +995,7 @@ describe('LexicalEditor tests', () => {
                 <ContentEditable key={divKey} role={null} spellCheck={null} />
               }
               placeholder=""
+              ErrorBoundary={LexicalErrorBoundary}
             />
             <TestPlugin />
           </TestComposer>
@@ -1614,7 +1617,7 @@ describe('LexicalEditor tests', () => {
     init();
 
     const commandListener = jest.fn();
-    const command = createCommand();
+    const command = createCommand('TEST_COMMAND');
     const payload = 'testPayload';
     const removeCommandListener = editor.registerCommand(
       command,
@@ -1643,7 +1646,7 @@ describe('LexicalEditor tests', () => {
 
     const commandListener = jest.fn();
     const commandListenerTwo = jest.fn();
-    const command = createCommand();
+    const command = createCommand('TEST_COMMAND');
     const removeCommandListener = editor.registerCommand(
       command,
       commandListener,
@@ -2071,7 +2074,7 @@ describe('LexicalEditor tests', () => {
     const textContentListener = jest.fn();
     const editableListener = jest.fn();
     const commandListener = jest.fn();
-    const TEST_COMMAND = createCommand();
+    const TEST_COMMAND = createCommand('TEST_COMMAND');
 
     init();
 
@@ -2141,5 +2144,44 @@ describe('LexicalEditor tests', () => {
     expect(textContentListener).toHaveBeenCalledTimes(1);
     expect(nodeTransformListener).toHaveBeenCalledTimes(1);
     expect(mutationListener).toHaveBeenCalledTimes(1);
+  });
+
+  it('can use flushSync for synchronous updates', () => {
+    init();
+    const onUpdate = jest.fn();
+    editor.registerUpdateListener(onUpdate);
+    editor.update(
+      () => {
+        $getRoot().append(
+          $createParagraphNode().append($createTextNode('Sync update')),
+        );
+      },
+      {
+        discrete: true,
+      },
+    );
+
+    const textContent = editor
+      .getEditorState()
+      .read(() => $getRoot().getTextContent());
+    expect(textContent).toBe('Sync update');
+    expect(onUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not include linebreak into inline elements', async () => {
+    init();
+
+    await editor.update(() => {
+      $getRoot().append(
+        $createParagraphNode().append(
+          $createTextNode('Hello'),
+          $createTestInlineElementNode(),
+        ),
+      );
+    });
+
+    expect(container.firstElementChild?.innerHTML).toBe(
+      '<p dir="ltr"><span data-lexical-text="true">Hello</span><a></a></p>',
+    );
   });
 });

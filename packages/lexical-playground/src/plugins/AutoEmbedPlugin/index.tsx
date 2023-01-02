@@ -12,16 +12,17 @@ import {
   AutoEmbedOption,
   EmbedConfig,
   EmbedMatchResult,
-  EmbedMenuProps,
   LexicalAutoEmbedPlugin,
   URL_MATCHER,
 } from '@lexical/react/LexicalAutoEmbedPlugin';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 import {useState} from 'react';
 import * as React from 'react';
+import * as ReactDOM from 'react-dom';
 
 import useModal from '../../hooks/useModal';
 import Button from '../../ui/Button';
+import {DialogActions} from '../../ui/Dialog';
 import {INSERT_FIGMA_COMMAND} from '../FigmaPlugin';
 import {INSERT_TWEET_COMMAND} from '../TwitterPlugin';
 import {INSERT_YOUTUBE_COMMAND} from '../YouTubePlugin';
@@ -189,20 +190,27 @@ function AutoEmbedMenu({
   selectedItemIndex,
   onOptionClick,
   onOptionMouseEnter,
-}: EmbedMenuProps) {
+}: {
+  selectedItemIndex: number | null;
+  onOptionClick: (option: AutoEmbedOption, index: number) => void;
+  onOptionMouseEnter: (index: number) => void;
+  options: Array<AutoEmbedOption>;
+}) {
   return (
-    <ul>
-      {options.map((option: AutoEmbedOption, i: number) => (
-        <AutoEmbedMenuItem
-          index={i}
-          isSelected={selectedItemIndex === i}
-          onClick={() => onOptionClick(option, i)}
-          onMouseEnter={() => onOptionMouseEnter(i)}
-          key={option.key}
-          option={option}
-        />
-      ))}
-    </ul>
+    <div className="typeahead-popover">
+      <ul>
+        {options.map((option: AutoEmbedOption, i: number) => (
+          <AutoEmbedMenuItem
+            index={i}
+            isSelected={selectedItemIndex === i}
+            onClick={() => onOptionClick(option, i)}
+            onMouseEnter={() => onOptionMouseEnter(i)}
+            key={option.key}
+            option={option}
+          />
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -241,14 +249,14 @@ export function AutoEmbedDialog({
           }}
         />
       </div>
-      <div className="ToolbarPlugin__dialogActions">
+      <DialogActions>
         <Button
           disabled={!embedResult}
           onClick={onClick}
           data-test-id={`${embedConfig.type}-embed-modal-submit-btn`}>
           Embed
         </Button>
-      </div>
+      </DialogActions>
     </div>
   );
 }
@@ -284,7 +292,33 @@ export default function AutoEmbedPlugin(): JSX.Element {
         embedConfigs={EmbedConfigs}
         onOpenEmbedModalForConfig={openEmbedModal}
         getMenuOptions={getMenuOptions}
-        menuComponent={AutoEmbedMenu}
+        menuRenderFn={(
+          anchorElementRef,
+          {selectedIndex, options, selectOptionAndCleanUp, setHighlightedIndex},
+        ) =>
+          anchorElementRef.current
+            ? ReactDOM.createPortal(
+                <div
+                  className="typeahead-popover auto-embed-menu"
+                  style={{
+                    marginLeft: anchorElementRef.current.style.width,
+                  }}>
+                  <AutoEmbedMenu
+                    options={options}
+                    selectedItemIndex={selectedIndex}
+                    onOptionClick={(option: AutoEmbedOption, index: number) => {
+                      setHighlightedIndex(index);
+                      selectOptionAndCleanUp(option);
+                    }}
+                    onOptionMouseEnter={(index: number) => {
+                      setHighlightedIndex(index);
+                    }}
+                  />
+                </div>,
+                anchorElementRef.current,
+              )
+            : null
+        }
       />
     </>
   );
