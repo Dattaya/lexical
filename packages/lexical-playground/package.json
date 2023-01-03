@@ -19,8 +19,7 @@
     "build-vercel": "(cd ../../ && node ./scripts/build.js --prod) && npm run build-prod",
     "preview": "vite preview"
   },
-  "dependencies": {
-    "@excalidraw/excalidraw": "0.11.0",
+  "dependencies": {    
     "@lexical/clipboard": "0.7.5",
     "@lexical/code": "0.7.5",
     "@lexical/file": "0.7.5",
@@ -35,7 +34,6 @@
     "@lexical/selection": "0.7.5",
     "@lexical/table": "0.7.5",
     "@lexical/utils": "0.7.5",
-    "katex": "^0.15.2",
     "lexical": "0.7.5",
     "lodash": "^4.17.21",
     "react-error-boundary": "^3.1.4",
@@ -45,7 +43,17 @@
   },
   "peerDependencies": {
     "react": ">=17.x",
-    "react-dom": ">=17.x"
+    "react-dom": ">=17.x",
+    "@excalidraw/excalidraw": "^0.11.0",
+    "katex": "^0.15.2"
+  },
+  "peerDependenciesMeta": {
+    "@excalidraw/excalidraw": {
+      "optional": true
+    },
+    "katex": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "react": "^18.2.0",
@@ -53,7 +61,9 @@
     "@types/lodash": "^4.14.182",
     "@vitejs/plugin-react": "^1.0.7",
     "vite": "^2.8.0",
-    "vite-plugin-replace": "0.1.1"
+    "vite-plugin-replace": "0.1.1",
+    "@excalidraw/excalidraw": "0.11.0",
+    "katex": "^0.15.2"
   },
   "repository": {
     "type": "git",
