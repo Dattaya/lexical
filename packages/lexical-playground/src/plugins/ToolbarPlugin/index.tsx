@@ -606,39 +606,45 @@ export default function ToolbarPlugin({
 
   return (
     <div className="toolbar">
-      <button
-        disabled={!canUndo || !isEditable}
-        onClick={() => {
-          activeEditor.dispatchCommand(UNDO_COMMAND, undefined);
-        }}
-        title={IS_APPLE ? 'Undo (⌘Z)' : 'Undo (Ctrl+Z)'}
-        type="button"
-        className="toolbar-item spaced"
-        aria-label="Undo">
-        <i className="format undo" />
-      </button>
-      <button
-        disabled={!canRedo || !isEditable}
-        onClick={() => {
-          activeEditor.dispatchCommand(REDO_COMMAND, undefined);
-        }}
-        title={IS_APPLE ? 'Redo (⌘Y)' : 'Redo (Ctrl+Y)'}
-        type="button"
-        className="toolbar-item"
-        aria-label="Redo">
-        <i className="format redo" />
-      </button>
-      <Divider />
-      {blockType in blockTypeToBlockName && activeEditor === editor && (
+      {config.undoRedo && (
         <>
-          <BlockFormatDropDown
-            disabled={!isEditable}
-            blockType={blockType}
-            editor={editor}
-          />
-          <Divider />
+          <button
+            disabled={!canUndo || !isEditable}
+            onClick={() => {
+              activeEditor.dispatchCommand(UNDO_COMMAND, undefined);
+            }}
+            title={IS_APPLE ? 'Undo (⌘Z)' : 'Undo (Ctrl+Z)'}
+            type="button"
+            className="toolbar-item spaced"
+            aria-label="Undo">
+            <i className="format undo" />
+          </button>
+          <button
+            disabled={!canRedo || !isEditable}
+            onClick={() => {
+              activeEditor.dispatchCommand(REDO_COMMAND, undefined);
+            }}
+            title={IS_APPLE ? 'Redo (⌘Y)' : 'Redo (Ctrl+Y)'}
+            type="button"
+            className="toolbar-item"
+            aria-label="Redo">
+            <i className="format redo" />
+          </button>
         </>
       )}
+      <Divider />
+      {config.formatBlockOptions &&
+        blockType in blockTypeToBlockName &&
+        activeEditor === editor && (
+          <>
+            <BlockFormatDropDown
+              disabled={!isEditable}
+              blockType={blockType}
+              editor={editor}
+            />
+            <Divider />
+          </>
+        )}
       {blockType === 'code' ? (
         <>
           <DropDown
@@ -681,134 +687,156 @@ export default function ToolbarPlugin({
             />
           )}
           <Divider />
-          <button
-            disabled={!isEditable}
-            onClick={() => {
-              activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
-            }}
-            className={'toolbar-item spaced ' + (isBold ? 'active' : '')}
-            title={IS_APPLE ? 'Bold (⌘B)' : 'Bold (Ctrl+B)'}
-            type="button"
-            aria-label={`Format text as bold. Shortcut: ${
-              IS_APPLE ? '⌘B' : 'Ctrl+B'
-            }`}>
-            <i className="format bold" />
-          </button>
-          <button
-            disabled={!isEditable}
-            onClick={() => {
-              activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic');
-            }}
-            className={'toolbar-item spaced ' + (isItalic ? 'active' : '')}
-            title={IS_APPLE ? 'Italic (⌘I)' : 'Italic (Ctrl+I)'}
-            type="button"
-            aria-label={`Format text as italics. Shortcut: ${
-              IS_APPLE ? '⌘I' : 'Ctrl+I'
-            }`}>
-            <i className="format italic" />
-          </button>
-          <button
-            disabled={!isEditable}
-            onClick={() => {
-              activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline');
-            }}
-            className={'toolbar-item spaced ' + (isUnderline ? 'active' : '')}
-            title={IS_APPLE ? 'Underline (⌘U)' : 'Underline (Ctrl+U)'}
-            type="button"
-            aria-label={`Format text to underlined. Shortcut: ${
-              IS_APPLE ? '⌘U' : 'Ctrl+U'
-            }`}>
-            <i className="format underline" />
-          </button>
-          <button
-            disabled={!isEditable}
-            onClick={() => {
-              activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code');
-            }}
-            className={'toolbar-item spaced ' + (isCode ? 'active' : '')}
-            title="Insert code block"
-            type="button"
-            aria-label="Insert code block">
-            <i className="format code" />
-          </button>
-          <button
-            disabled={!isEditable}
-            onClick={insertLink}
-            className={'toolbar-item spaced ' + (isLink ? 'active' : '')}
-            aria-label="Insert link"
-            title="Insert link"
-            type="button">
-            <i className="format link" />
-          </button>
-          <ColorPicker
-            disabled={!isEditable}
-            buttonClassName="toolbar-item color-picker"
-            buttonAriaLabel="Formatting text color"
-            buttonIconClassName="icon font-color"
-            color={fontColor}
-            onChange={onFontColorSelect}
-            title="text color"
-          />
-          <ColorPicker
-            disabled={!isEditable}
-            buttonClassName="toolbar-item color-picker"
-            buttonAriaLabel="Formatting background color"
-            buttonIconClassName="icon bg-color"
-            color={bgColor}
-            onChange={onBgColorSelect}
-            title="bg color"
-          />
-          <DropDown
-            disabled={!isEditable}
-            buttonClassName="toolbar-item spaced"
-            buttonLabel=""
-            buttonAriaLabel="Formatting options for additional text styles"
-            buttonIconClassName="icon dropdown-more">
-            <DropDownItem
+          {config.biu && (
+            <>
+              <button
+                disabled={!isEditable}
+                onClick={() => {
+                  activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
+                }}
+                className={'toolbar-item spaced ' + (isBold ? 'active' : '')}
+                title={IS_APPLE ? 'Bold (⌘B)' : 'Bold (Ctrl+B)'}
+                type="button"
+                aria-label={`Format text as bold. Shortcut: ${
+                  IS_APPLE ? '⌘B' : 'Ctrl+B'
+                }`}>
+                <i className="format bold" />
+              </button>
+              <button
+                disabled={!isEditable}
+                onClick={() => {
+                  activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic');
+                }}
+                className={'toolbar-item spaced ' + (isItalic ? 'active' : '')}
+                title={IS_APPLE ? 'Italic (⌘I)' : 'Italic (Ctrl+I)'}
+                type="button"
+                aria-label={`Format text as italics. Shortcut: ${
+                  IS_APPLE ? '⌘I' : 'Ctrl+I'
+                }`}>
+                <i className="format italic" />
+              </button>
+              <button
+                disabled={!isEditable}
+                onClick={() => {
+                  activeEditor.dispatchCommand(
+                    FORMAT_TEXT_COMMAND,
+                    'underline',
+                  );
+                }}
+                className={
+                  'toolbar-item spaced ' + (isUnderline ? 'active' : '')
+                }
+                title={IS_APPLE ? 'Underline (⌘U)' : 'Underline (Ctrl+U)'}
+                type="button"
+                aria-label={`Format text to underlined. Shortcut: ${
+                  IS_APPLE ? '⌘U' : 'Ctrl+U'
+                }`}>
+                <i className="format underline" />
+              </button>
+            </>
+          )}
+          {config.codeBlock && (
+            <button
+              disabled={!isEditable}
               onClick={() => {
-                activeEditor.dispatchCommand(
-                  FORMAT_TEXT_COMMAND,
-                  'strikethrough',
-                );
+                activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code');
               }}
-              className={'item ' + dropDownActiveClass(isStrikethrough)}
-              title="Strikethrough"
-              aria-label="Format text with a strikethrough">
-              <i className="icon strikethrough" />
-              <span className="text">Strikethrough</span>
-            </DropDownItem>
-            <DropDownItem
-              onClick={() => {
-                activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, 'subscript');
-              }}
-              className={'item ' + dropDownActiveClass(isSubscript)}
-              title="Subscript"
-              aria-label="Format text with a subscript">
-              <i className="icon subscript" />
-              <span className="text">Subscript</span>
-            </DropDownItem>
-            <DropDownItem
-              onClick={() => {
-                activeEditor.dispatchCommand(
-                  FORMAT_TEXT_COMMAND,
-                  'superscript',
-                );
-              }}
-              className={'item ' + dropDownActiveClass(isSuperscript)}
-              title="Superscript"
-              aria-label="Format text with a superscript">
-              <i className="icon superscript" />
-              <span className="text">Superscript</span>
-            </DropDownItem>
-            <DropDownItem
-              onClick={clearFormatting}
-              className="item"
-              title="Clear text formatting"
-              aria-label="Clear all text formatting">
-              <i className="icon clear" />
-              <span className="text">Clear Formatting</span>
-            </DropDownItem>
-          </DropDown>
+              className={'toolbar-item spaced ' + (isCode ? 'active' : '')}
+              title="Insert code block"
+              type="button"
+              aria-label="Insert code block">
+              <i className="format code" />
+            </button>
+          )}
+          {config.link && (
+            <button
+              disabled={!isEditable}
+              onClick={insertLink}
+              className={'toolbar-item spaced ' + (isLink ? 'active' : '')}
+              aria-label="Insert link"
+              title="Insert link"
+              type="button">
+              <i className="format link" />
+            </button>
+          )}
+          {config.textColorPicker && (
+            <ColorPicker
+              disabled={!isEditable}
+              buttonClassName="toolbar-item color-picker"
+              buttonAriaLabel="Formatting text color"
+              buttonIconClassName="icon font-color"
+              color={fontColor}
+              onChange={onFontColorSelect}
+              title="text color"
+            />
+          )}
+          {config.bgColorPicker && (
+            <ColorPicker
+              disabled={!isEditable}
+              buttonClassName="toolbar-item color-picker"
+              buttonAriaLabel="Formatting background color"
+              buttonIconClassName="icon bg-color"
+              color={bgColor}
+              onChange={onBgColorSelect}
+              title="bg color"
+            />
+          )}
+          {config.formatTextOptions && (
+            <DropDown
+              disabled={!isEditable}
+              buttonClassName="toolbar-item spaced"
+              buttonLabel=""
+              buttonAriaLabel="Formatting options for additional text styles"
+              buttonIconClassName="icon dropdown-more">
+              <DropDownItem
+                onClick={() => {
+                  activeEditor.dispatchCommand(
+                    FORMAT_TEXT_COMMAND,
+                    'strikethrough',
+                  );
+                }}
+                className={'item ' + dropDownActiveClass(isStrikethrough)}
+                title="Strikethrough"
+                aria-label="Format text with a strikethrough">
+                <i className="icon strikethrough" />
+                <span className="text">Strikethrough</span>
+              </DropDownItem>
+              <DropDownItem
+                onClick={() => {
+                  activeEditor.dispatchCommand(
+                    FORMAT_TEXT_COMMAND,
+                    'subscript',
+                  );
+                }}
+                className={'item ' + dropDownActiveClass(isSubscript)}
+                title="Subscript"
+                aria-label="Format text with a subscript">
+                <i className="icon subscript" />
+                <span className="text">Subscript</span>
+              </DropDownItem>
+              <DropDownItem
+                onClick={() => {
+                  activeEditor.dispatchCommand(
+                    FORMAT_TEXT_COMMAND,
+                    'superscript',
+                  );
+                }}
+                className={'item ' + dropDownActiveClass(isSuperscript)}
+                title="Superscript"
+                aria-label="Format text with a superscript">
+                <i className="icon superscript" />
+                <span className="text">Superscript</span>
+              </DropDownItem>
+              <DropDownItem
+                onClick={clearFormatting}
+                className="item"
+                title="Clear text formatting"
+                aria-label="Clear all text formatting">
+                <i className="icon clear" />
+                <span className="text">Clear Formatting</span>
+              </DropDownItem>
+            </DropDown>
+          )}
           <Divider />
           {config?.insertOptions && (
             <DropDown
