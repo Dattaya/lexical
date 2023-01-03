@@ -69,6 +69,7 @@ import TwitterPlugin from './plugins/TwitterPlugin';
 import YouTubePlugin from './plugins/YouTubePlugin';
 import ContentEditable from './ui/ContentEditable';
 import Placeholder from './ui/Placeholder';
+import joinClasses from './utils/join-classes';
 
 const skipCollaborationInit =
   // @ts-ignore
@@ -91,6 +92,8 @@ export type EditorProps = {
   onChangeMode?: 'html' | 'json';
   toolbarConfig?: ToolbarConfig;
   onUpload?: OnImageUpload;
+  rootClassName?: string;
+  containerClassName?: string;
 };
 
 const defaultToolbarConfig: ToolbarConfig = {
@@ -121,6 +124,8 @@ export default function Editor({
   onChangeMode = 'json',
   onUpload,
   toolbarConfig,
+  rootClassName,
+  containerClassName,
 }: EditorProps): JSX.Element {
   const {historyState} = useSharedHistoryContext();
   const text = isCollab
@@ -146,12 +151,12 @@ export default function Editor({
   );
 
   return (
-    <div className="editor-shell">
+    <div className={joinClasses('editor-shell', rootClassName)}>
       {isRichText && <ToolbarPlugin config={normToolbarConfig} />}
       <div
-        className={`editor-container ${showTreeView ? 'tree-view' : ''} ${
-          !isRichText ? 'plain-text' : ''
-        }`}>
+        className={`editor-container ${containerClassName ?? ''} ${
+          showTreeView ? 'tree-view' : ''
+        } ${!isRichText ? 'plain-text' : ''}`}>
         {isMaxLength && <MaxLengthPlugin maxLength={30} />}
         <DragDropPaste />
         <AutoFocusPlugin />
