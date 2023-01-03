@@ -88,22 +88,28 @@ export function InsertImageUriDialogBody({
   );
 }
 
-export type OnImageUpload = (img: File, altText: string) => Promise<string>;
-export type InsertImagePayload1 = {altText: string; file: File};
-
 export function InsertImageUploadedDialogBody({
   onClick,
 }: {
-  onClick: (payload: InsertImagePayload1) => void;
+  onClick: (payload: InsertImagePayload) => void;
 }) {
   const [file, setFile] = useState<File>();
+  const [src, setSrc] = useState('');
   const [altText, setAltText] = useState('');
 
   const isDisabled = file === undefined;
 
-  const loadImage = async (files: FileList | null) => {
-    if (files) {
+  const loadImage = (files: FileList | null) => {
+    const reader = new FileReader();
+    reader.onload = function () {
+      if (typeof reader.result === 'string') {
+        setSrc(reader.result);
+      }
+      return '';
+    };
+    if (files !== null && files[0]) {
       setFile(files[0]);
+      reader.readAsDataURL(files[0]);
     }
   };
 
@@ -127,7 +133,7 @@ export function InsertImageUploadedDialogBody({
           data-test-id="image-modal-file-upload-btn"
           disabled={isDisabled}
           onClick={() => {
-            if (file) onClick({altText, file});
+            if (file) onClick({altText, file, src});
           }}>
           Confirm
         </Button>
@@ -139,11 +145,9 @@ export function InsertImageUploadedDialogBody({
 export function InsertImageDialog({
   activeEditor,
   onClose,
-  onUpload,
 }: {
   activeEditor: LexicalEditor;
   onClose: () => void;
-  onUpload?: OnImageUpload;
 }): JSX.Element {
   const [mode, setMode] = useState<null | 'url' | 'file'>(null);
   const hasModifier = useRef(false);
@@ -164,43 +168,6 @@ export function InsertImageDialog({
     onClose();
   };
 
-  const onUploadClick = async ({file, altText}: InsertImagePayload1) => {
-    const reader = new FileReader();
-    reader.onload = function () {
-      if (typeof reader.result === 'string') {
-        const isSuccess = activeEditor.dispatchCommand(INSERT_IMAGE_COMMAND, {
-          altText,
-          src: reader.result,
-        });
-        if (isSuccess && onUpload) {
-          activeEditor.update(async () => {
-            const selection = $getSelection();
-            const node = selection?.getNodes()[0];
-            if (node && $isImageNode(node)) {
-              try {
-                const imgUrl = await onUpload(file, altText);
-                const preloadImage = new Image();
-                preloadImage.onload = () => {
-                  activeEditor.update(() => {
-                    node.setSrc(imgUrl);
-                  });
-                };
-                preloadImage.onerror = () => {
-                  node.remove();
-                };
-                preloadImage.src = imgUrl;
-              } catch (e: unknown) {
-                node.remove();
-              }
-            }
-          });
-        }
-      }
-    };
-    reader.readAsDataURL(file);
-    onClose();
-  };
-
   return (
     <>
       {!mode && (
@@ -218,9 +185,7 @@ export function InsertImageDialog({
         </DialogButtonsList>
       )}
       {mode === 'url' && <InsertImageUriDialogBody onClick={onClick} />}
-      {mode === 'file' && (
-        <InsertImageUploadedDialogBody onClick={onUploadClick} />
-      )}
+      {mode === 'file' && <InsertImageUploadedDialogBody onClick={onClick} />}
     </>
   );
 }

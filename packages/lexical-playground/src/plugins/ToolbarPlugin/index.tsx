@@ -81,7 +81,7 @@ import {getSelectedNode} from '../../utils/getSelectedNode';
 import {sanitizeUrl} from '../../utils/url';
 import {EmbedConfigs} from '../AutoEmbedPlugin';
 import {INSERT_COLLAPSIBLE_COMMAND} from '../CollapsiblePlugin';
-import {type OnImageUpload, InsertImageDialog} from '../ImagesPlugin';
+import {InsertImageDialog} from '../ImagesPlugin';
 import {InsertPollDialog} from '../PollPlugin';
 import {InsertTableDialog} from '../TablePlugin';
 
@@ -367,12 +367,10 @@ function FontDropDown({
 }
 
 export type ToolbarPluginProps = {
-  onUpload?: OnImageUpload;
   config: ToolbarConfig;
 };
 
 export default function ToolbarPlugin({
-  onUpload,
   config,
 }: ToolbarPluginProps): JSX.Element {
   const normFontFamilyOption = Array.isArray(config.fontFamilyOptions)
@@ -836,7 +834,6 @@ export default function ToolbarPlugin({
                     <InsertImageDialog
                       activeEditor={activeEditor}
                       onClose={onClose}
-                      onUpload={onUpload}
                     />
                   ));
                 }}

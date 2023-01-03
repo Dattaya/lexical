@@ -25,6 +25,7 @@ import * as React from 'react';
 import {Suspense} from 'react';
 
 import joinClasses from '../utils/join-classes';
+import ImageSpinner from './ImageSpinner';
 
 const ImageComponent = React.lazy(
   // @ts-ignore
@@ -40,6 +41,7 @@ export interface ImagePayload {
   src: string;
   width?: number;
   captionsEnabled?: boolean;
+  file?: File;
 }
 
 function convertImageElement(domNode: Node): null | DOMConversionOutput {
@@ -80,6 +82,7 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
   __caption: LexicalEditor;
   // Captions cannot yet be used within editor cells
   __captionsEnabled: boolean;
+  __file?: File;
 
   static getType(): string {
     return 'image';
@@ -96,6 +99,7 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
       node.__caption,
       node.__captionsEnabled,
       node.__key,
+      node.__file,
     );
   }
 
@@ -146,6 +150,7 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     caption?: LexicalEditor,
     captionsEnabled?: boolean,
     key?: NodeKey,
+    file?: File,
   ) {
     super(key);
     this.__src = src;
@@ -156,6 +161,7 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     this.__showCaption = showCaption || false;
     this.__caption = caption || createEditor();
     this.__captionsEnabled = captionsEnabled || captionsEnabled === undefined;
+    this.__file = file;
   }
 
   exportJSON(): SerializedImageNode {
@@ -190,6 +196,11 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     const writable = this.getWritable();
     writable.__src = src;
   }
+
+  setFile(file: File | undefined): void {
+    const writable = this.getWritable();
+    writable.__file = file;
+  }
   // View
 
   createDOM(config: EditorConfig): HTMLElement {
@@ -214,6 +225,10 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     return this.__altText;
   }
 
+  getFile(): File | undefined {
+    return this.__file;
+  }
+
   decorate(): JSX.Element {
     return (
       <Suspense fallback={null}>
@@ -229,6 +244,7 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
           captionsEnabled={this.__captionsEnabled}
           resizable={true}
         />
+        {this.__file && <ImageSpinner />}
       </Suspense>
     );
   }
@@ -244,6 +260,7 @@ export function $createImageNode({
   showCaption,
   caption,
   key,
+  file,
 }: ImagePayload): ImageNode {
   return $applyNodeReplacement(
     new ImageNode(
@@ -256,6 +273,7 @@ export function $createImageNode({
       caption,
       captionsEnabled,
       key,
+      file,
     ),
   );
 }

@@ -1592,3 +1592,40 @@ hr.selected {
     visibility: hidden;
   }
 }
+
+.image-spinner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  animation: image-spinner-rotate 1.5s linear infinite;
+  margin: clamp(5px, 3%, 15px);
+  width: clamp(20px, 20%, 40px);
+  height: clamp(20px, 20%, 40px);
+}
+
+.image-spinner .circle {
+  stroke: white;
+  stroke-linecap: round;
+  animation: image-spinner-circle 1.5s ease-in-out infinite;
+}
+
+@keyframes image-spinner-rotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes image-spinner-circle {
+  0% {
+    stroke-dasharray: 1, 60;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 37, 60;
+    stroke-dashoffset: -35;
+  }
+  100% {
+    stroke-dasharray: 37, 60;
+    stroke-dashoffset: -56;
+  }
+}

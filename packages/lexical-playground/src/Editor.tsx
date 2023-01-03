@@ -54,13 +54,16 @@ import ListMaxIndentLevelPlugin from './plugins/ListMaxIndentLevelPlugin';
 import MarkdownShortcutPlugin from './plugins/MarkdownShortcutPlugin';
 import {MaxLengthPlugin} from './plugins/MaxLengthPlugin';
 import MentionsPlugin from './plugins/MentionsPlugin';
+import OnImageUploadPlugin, {
+  type OnImageUpload,
+} from './plugins/OnImageUploadPlugin';
 import PollPlugin from './plugins/PollPlugin';
 import SpeechToTextPlugin from './plugins/SpeechToTextPlugin';
 import TabFocusPlugin from './plugins/TabFocusPlugin';
 import TableCellActionMenuPlugin from './plugins/TableActionMenuPlugin';
 import TableCellResizer from './plugins/TableCellResizer';
 import TableOfContentsPlugin from './plugins/TableOfContentsPlugin';
-import ToolbarPlugin, {ToolbarPluginProps} from './plugins/ToolbarPlugin';
+import ToolbarPlugin from './plugins/ToolbarPlugin';
 import TreeViewPlugin from './plugins/TreeViewPlugin';
 import TwitterPlugin from './plugins/TwitterPlugin';
 import YouTubePlugin from './plugins/YouTubePlugin';
@@ -87,7 +90,8 @@ export type EditorProps = {
   ) => void;
   onChangeMode?: 'html' | 'json';
   toolbarConfig?: ToolbarConfig;
-} & Pick<ToolbarPluginProps, 'onUpload'>;
+  onUpload?: OnImageUpload;
+};
 
 const defaultToolbarConfig: ToolbarConfig = {
   align: true,
@@ -143,9 +147,7 @@ export default function Editor({
 
   return (
     <div className="editor-shell">
-      {isRichText && (
-        <ToolbarPlugin config={normToolbarConfig} onUpload={onUpload} />
-      )}
+      {isRichText && <ToolbarPlugin config={normToolbarConfig} />}
       <div
         className={`editor-container ${showTreeView ? 'tree-view' : ''} ${
           !isRichText ? 'plain-text' : ''
@@ -210,6 +212,7 @@ export default function Editor({
             <TablePlugin />
             <TableCellResizer />
             <ImagesPlugin />
+            <OnImageUploadPlugin onUpload={onUpload} />
             <LinkPlugin />
             <PollPlugin />
             <TwitterPlugin />
