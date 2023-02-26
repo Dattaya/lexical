@@ -16,7 +16,11 @@ import {
   insertList,
 } from '@lexical/list';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
-import {$findMatchingParent, mergeRegister} from '@lexical/utils';
+import {
+  $findMatchingParent,
+  isHTMLElement,
+  mergeRegister,
+} from '@lexical/utils';
 import {
   $getNearestNodeFromDOMNode,
   $getSelection,
@@ -139,33 +143,27 @@ export function CheckListPlugin(): null {
         },
         COMMAND_PRIORITY_LOW,
       ),
-      listenPointerDown(),
+      editor.registerRootListener((rootElement, prevElement) => {
+        if (rootElement !== null) {
+          rootElement.addEventListener('click', handleClick);
+          rootElement.addEventListener('pointerdown', handlePointerDown);
+        }
+
+        if (prevElement !== null) {
+          prevElement.removeEventListener('click', handleClick);
+          prevElement.removeEventListener('pointerdown', handlePointerDown);
+        }
+      }),
     );
   });
 
   return null;
 }
 
-let listenersCount = 0;
-
-function listenPointerDown() {
-  if (listenersCount++ === 0) {
-    document.addEventListener('click', handleClick);
-    document.addEventListener('pointerdown', handlePointerDown);
-  }
-
-  return () => {
-    if (--listenersCount === 0) {
-      document.removeEventListener('click', handleClick);
-      document.removeEventListener('pointerdown', handlePointerDown);
-    }
-  };
-}
-
 function handleCheckItemEvent(event: PointerEvent, callback: () => void) {
   const target = event.target;
 
-  if (!(target instanceof HTMLElement)) {
+  if (target === null || !isHTMLElement(target)) {
     return;
   }
 
@@ -174,7 +172,7 @@ function handleCheckItemEvent(event: PointerEvent, callback: () => void) {
 
   if (
     firstChild != null &&
-    firstChild instanceof HTMLElement &&
+    isHTMLElement(firstChild) &&
     (firstChild.tagName === 'UL' || firstChild.tagName === 'OL')
   ) {
     return;

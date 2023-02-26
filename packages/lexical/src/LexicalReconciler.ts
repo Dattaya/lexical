@@ -116,10 +116,28 @@ function setTextAlign(domStyle: CSSStyleDeclaration, value: string): void {
   domStyle.setProperty('text-align', value);
 }
 
+const DEFAULT_INDENT_VALUE = '20px';
+
 function setElementIndent(dom: HTMLElement, indent: number): void {
+  const indentClassName = activeEditorConfig.theme.indent;
+
+  if (typeof indentClassName === 'string') {
+    const elementHasClassName = dom.classList.contains(indentClassName);
+
+    if (indent > 0 && !elementHasClassName) {
+      dom.classList.add(indentClassName);
+    } else if (indent < 1 && elementHasClassName) {
+      dom.classList.remove(indentClassName);
+    }
+  }
+
+  const indentationBaseValue =
+    getComputedStyle(dom).getPropertyValue('--lexical-indent-base-value') ||
+    DEFAULT_INDENT_VALUE;
+
   dom.style.setProperty(
     'padding-inline-start',
-    indent === 0 ? '' : indent * 20 + 'px',
+    indent === 0 ? '' : `calc(${indent} * ${indentationBaseValue})`,
   );
 }
 
@@ -247,13 +265,14 @@ function createChildrenWithDirection(
 ): void {
   const previousSubTreeDirectionedTextContent = subTreeDirectionedTextContent;
   subTreeDirectionedTextContent = '';
-  createChildren(children, 0, endIndex, dom, null);
+  createChildren(children, element, 0, endIndex, dom, null);
   reconcileBlockDirection(element, dom);
   subTreeDirectionedTextContent = previousSubTreeDirectionedTextContent;
 }
 
 function createChildren(
   children: Array<NodeKey>,
+  element: ElementNode,
   _startIndex: number,
   endIndex: number,
   dom: null | HTMLElement,
@@ -266,7 +285,9 @@ function createChildren(
   for (; startIndex <= endIndex; ++startIndex) {
     createNode(children[startIndex], dom, insertDOM);
   }
-
+  if ($textContentRequiresDoubleLinebreakAtEnd(element)) {
+    subTreeTextContent += DOUBLE_LINE_BREAK;
+  }
   // @ts-expect-error: internal field
   dom.__lexicalTextContent = subTreeTextContent;
   subTreeTextContent = previousSubTreeTextContent + subTreeTextContent;
@@ -449,7 +470,14 @@ function reconcileChildren(
 
     if (prevChildrenSize === 0) {
       if (nextChildrenSize !== 0) {
-        createChildren(nextChildren, 0, nextChildrenSize - 1, dom, null);
+        createChildren(
+          nextChildren,
+          nextElement,
+          0,
+          nextChildrenSize - 1,
+          dom,
+          null,
+        );
       }
     } else if (nextChildrenSize === 0) {
       if (prevChildrenSize !== 0) {
@@ -470,6 +498,7 @@ function reconcileChildren(
       }
     } else {
       reconcileNodeChildren(
+        nextElement,
         prevChildren,
         nextChildren,
         prevChildrenSize,
@@ -657,6 +686,7 @@ function getNextSibling(element: HTMLElement): Node | null {
 }
 
 function reconcileNodeChildren(
+  nextElement: ElementNode,
   prevChildren: Array<NodeKey>,
   nextChildren: Array<NodeKey>,
   prevChildrenLength: number,
@@ -731,7 +761,14 @@ function reconcileNodeChildren(
       previousNode === undefined
         ? null
         : activeEditor.getElementByKey(previousNode);
-    createChildren(nextChildren, nextIndex, nextEndIndex, dom, insertDOM);
+    createChildren(
+      nextChildren,
+      nextElement,
+      nextIndex,
+      nextEndIndex,
+      dom,
+      insertDOM,
+    );
   } else if (removeOldChildren && !appendNewChildren) {
     destroyChildren(prevChildren, prevIndex, prevEndIndex, dom);
   }

@@ -5,11 +5,3 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-
-import type {LexicalEditor} from 'lexical';
-
-import {useList} from './shared/useList';
-
-export function useLexicalList(editor: LexicalEditor): void {
-  useList(editor);
-}

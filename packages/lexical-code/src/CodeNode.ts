@@ -32,8 +32,10 @@ import 'prismjs/components/prism-python';
 import 'prismjs/components/prism-rust';
 import 'prismjs/components/prism-swift';
 import 'prismjs/components/prism-typescript';
+import 'prismjs/components/prism-java';
+import 'prismjs/components/prism-cpp';
 
-import {addClassNamesToElement} from '@lexical/utils';
+import {addClassNamesToElement, isHTMLElement} from '@lexical/utils';
 import {
   $applyNodeReplacement,
   $createLineBreakNode,
@@ -68,7 +70,7 @@ const mapToPrismLanguage = (
 
 function hasChildDOMNodeTag(node: Node, tagName: string) {
   for (const child of node.childNodes) {
-    if (child instanceof HTMLElement && child.tagName === tagName) {
+    if (isHTMLElement(child) && child.tagName === tagName) {
       return true;
     }
     hasChildDOMNodeTag(child, tagName);
@@ -107,7 +109,11 @@ export class CodeNode extends ElementNode {
     }
     return element;
   }
-  updateDOM(prevNode: CodeNode, dom: HTMLElement): boolean {
+  updateDOM(
+    prevNode: CodeNode,
+    dom: HTMLElement,
+    config: EditorConfig,
+  ): boolean {
     const language = this.__language;
     const prevLanguage = prevNode.__language;
 
@@ -125,7 +131,7 @@ export class CodeNode extends ElementNode {
     return {
       // Typically <pre> is used for code blocks, and <code> for inline code styles
       // but if it's a multi line <code> we'll create a block. Pass through to
-      // inline format handled by TextNode otherwise
+      // inline format handled by TextNode otherwise.
       code: (node: Node) => {
         const isMultiLine =
           node.textContent != null &&
@@ -152,7 +158,7 @@ export class CodeNode extends ElementNode {
         if (isGitHubCodeTable(table as HTMLTableElement)) {
           return {
             conversion: convertTableElement,
-            priority: 4,
+            priority: 3,
           };
         }
         return null;
@@ -165,7 +171,7 @@ export class CodeNode extends ElementNode {
         if (isGitHubCodeCell(td)) {
           return {
             conversion: convertTableCellElement,
-            priority: 4,
+            priority: 3,
           };
         }
         if (table && isGitHubCodeTable(table)) {
@@ -173,7 +179,7 @@ export class CodeNode extends ElementNode {
           // Otherwise it'll fall back to the T
           return {
             conversion: convertCodeNoop,
-            priority: 4,
+            priority: 3,
           };
         }
 
@@ -186,7 +192,7 @@ export class CodeNode extends ElementNode {
         if (table && isGitHubCodeTable(table)) {
           return {
             conversion: convertCodeNoop,
-            priority: 4,
+            priority: 3,
           };
         }
         return null;
@@ -273,7 +279,7 @@ export class CodeNode extends ElementNode {
     return false;
   }
 
-  collapseAtStart(): true {
+  collapseAtStart(): boolean {
     const paragraph = $createParagraphNode();
     const children = this.getChildren();
     children.forEach((child) => paragraph.append(child));

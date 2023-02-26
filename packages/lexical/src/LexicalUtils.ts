@@ -30,7 +30,7 @@ import type {RootNode} from './nodes/LexicalRootNode';
 import type {TextFormatType, TextNode} from './nodes/LexicalTextNode';
 
 import {CAN_USE_DOM} from 'shared/canUseDOM';
-import {IS_APPLE, IS_IOS, IS_SAFARI} from 'shared/environment';
+import {IS_APPLE, IS_APPLE_WEBKIT, IS_IOS, IS_SAFARI} from 'shared/environment';
 import invariant from 'shared/invariant';
 
 import {
@@ -573,6 +573,41 @@ export function $updateSelectedTextFromDOM(
     let textContent = getAnchorTextFromDOM(anchorNode);
     const node = $getNearestNodeFromDOMNode(anchorNode);
     if (textContent !== null && $isTextNode(node)) {
+      if (node.canContainTabs()) {
+        const hasTabCharacter = textContent.includes('\t');
+
+        // At present, this condition is primarily used for code highlights when
+        // grouped together in lines (divs). If a code highlight includes a tab,
+        // the newly typed character may be missing from the DOM's textContent.
+
+        // Let's take an example. If a LinedCodeNode looked roughly like this:
+        // <code><div><codeHighlight /><codeHighlight /></div></code>,
+        // the following could occur when using tabs:
+
+        // a. /tconst --type--> 'd' at offset 1 --get--> /tconst
+        //    - Missing 'd'
+        // b. /tconst --type--> 'd' at offset 3 --get--> /tcondst
+        //    --type--> 'd' at offset 3 --get--> /tcondst
+        //    - Missing second 'd'
+
+        // In these cases, we can fix the problem by manually inserting the
+        // newly typed character where we know it should have been.
+
+        if (data && data.length > 0 && hasTabCharacter) {
+          const selectionOffset = data.length;
+          const insertionOffset = anchorOffset + selectionOffset - 1;
+          const beforeInsertion = textContent.slice(0, insertionOffset);
+          const afterInsertion = textContent.slice(
+            insertionOffset,
+            textContent.length,
+          );
+
+          textContent = `${beforeInsertion}${data}${afterInsertion}`;
+          anchorOffset += selectionOffset;
+          focusOffset += selectionOffset;
+        }
+      }
+
       // Data is intentionally truthy, as we check for boolean, null and empty string.
       if (textContent === COMPOSITION_SUFFIX && data) {
         const offset = data.length;
@@ -618,7 +653,7 @@ export function $updateTextNodeFromDOMContent(
     if (compositionEnd || normalizedTextContent !== prevTextContent) {
       if (normalizedTextContent === '') {
         $setCompositionKey(null);
-        if (!IS_SAFARI && !IS_IOS) {
+        if (!IS_SAFARI && !IS_IOS && !IS_APPLE_WEBKIT) {
           // For composition (mainly Android), we have to remove the node on a later update
           const editor = getActiveEditor();
           setTimeout(() => {
@@ -635,10 +670,14 @@ export function $updateTextNodeFromDOMContent(
       }
       const parent = node.getParent();
       const prevSelection = $getPreviousSelection();
+      const compositionKey = $getCompositionKey();
+      const nodeKey = node.getKey();
 
       if (
         node.isToken() ||
-        ($getCompositionKey() !== null && !isComposing) ||
+        (compositionKey !== null &&
+          nodeKey === compositionKey &&
+          !isComposing) ||
         // Check if character was added at the start, and we need
         // to clear this input from occurring as that action wasn't
         // permitted.
@@ -1460,4 +1499,51 @@ export function updateDOMBlockCursorElement(
 
 export function getDOMSelection(targetWindow: null | Window): null | Selection {
   return !CAN_USE_DOM ? null : (targetWindow || window).getSelection();
+}
+
+export function $splitNode(
+  node: ElementNode,
+  offset: number,
+): [ElementNode | null, ElementNode] {
+  let startNode = node.getChildAtIndex(offset);
+  if (startNode == null) {
+    startNode = node;
+  }
+
+  invariant(
+    !$isRootOrShadowRoot(node),
+    'Can not call $splitNode() on root element',
+  );
+
+  const recurse = (
+    currentNode: LexicalNode,
+  ): [ElementNode, ElementNode, LexicalNode] => {
+    const parent = currentNode.getParentOrThrow();
+    const isParentRoot = $isRootOrShadowRoot(parent);
+    // The node we start split from (leaf) is moved, but its recursive
+    // parents are copied to create separate tree
+    const nodeToMove =
+      currentNode === startNode && !isParentRoot
+        ? currentNode
+        : $copyNode(currentNode);
+
+    if (isParentRoot) {
+      currentNode.insertAfter(nodeToMove);
+      return [
+        currentNode as ElementNode,
+        nodeToMove as ElementNode,
+        nodeToMove,
+      ];
+    } else {
+      const [leftTree, rightTree, newParent] = recurse(parent);
+      const nextSiblings = currentNode.getNextSiblings();
+
+      newParent.append(nodeToMove, ...nextSiblings);
+      return [leftTree, rightTree, nodeToMove];
+    }
+  };
+
+  const [leftTree, rightTree] = recurse(startNode);
+
+  return [leftTree, rightTree];
 }

@@ -13,6 +13,7 @@ import type {TextNode} from './nodes/LexicalTextNode';
 
 import {
   CAN_USE_BEFORE_INPUT,
+  IS_APPLE_WEBKIT,
   IS_FIREFOX,
   IS_IOS,
   IS_SAFARI,
@@ -50,6 +51,7 @@ import {
   KEY_ARROW_UP_COMMAND,
   KEY_BACKSPACE_COMMAND,
   KEY_DELETE_COMMAND,
+  KEY_DOWN_COMMAND,
   KEY_ENTER_COMMAND,
   KEY_ESCAPE_COMMAND,
   KEY_SPACE_COMMAND,
@@ -158,13 +160,15 @@ if (CAN_USE_BEFORE_INPUT) {
 let lastKeyDownTimeStamp = 0;
 let lastKeyCode = 0;
 let lastBeforeInputInsertTextTimeStamp = 0;
+let unprocessedBeforeInputData: null | string = null;
 let rootElementsRegistered = 0;
 let isSelectionChangeFromDOMUpdate = false;
 let isSelectionChangeFromMouseDown = false;
 let isInsertLineBreak = false;
 let isFirefoxEndingComposition = false;
-let collapsedSelectionFormat: [number, number, NodeKey, number] = [
+let collapsedSelectionFormat: [number, string, number, NodeKey, number] = [
   0,
+  '',
   0,
   'root',
   0,
@@ -204,7 +208,7 @@ function $shouldPreventDefaultAndInsertText(
         // 50ms then we proceed as normal. However, if there is not, then this is likely
         // a dangling `input` event caused by execCommand('insertText').
         lastBeforeInputInsertTextTimeStamp < timeStamp + 50)) ||
-      textLength < 2 ||
+      (anchorNode.isDirty() && textLength < 2) ||
       doesContainGrapheme(text)) &&
       anchor.offset !== focus.offset &&
       !anchorNode.isComposing()) ||
@@ -221,6 +225,7 @@ function $shouldPreventDefaultAndInsertText(
       domAnchorNode !== getDOMTextNode(backingAnchorElement)) ||
     // Check if we're changing from bold to italics, or some other format.
     anchorNode.getFormat() !== selection.format ||
+    anchorNode.getStyle() !== selection.style ||
     // One last set of heuristics to check against.
     $shouldInsertTextAfterOrBeforeTextNode(selection, anchorNode)
   );
@@ -304,7 +309,7 @@ function onSelectionChange(
         const currentTimeStamp = windowEvent
           ? windowEvent.timeStamp
           : performance.now();
-        const [lastFormat, lastOffset, lastKey, timeStamp] =
+        const [lastFormat, lastStyle, lastOffset, lastKey, timeStamp] =
           collapsedSelectionFormat;
 
         if (
@@ -313,11 +318,14 @@ function onSelectionChange(
           anchor.key === lastKey
         ) {
           selection.format = lastFormat;
+          selection.style = lastStyle;
         } else {
           if (anchor.type === 'text') {
             selection.format = anchorNode.getFormat();
+            selection.style = anchorNode.getStyle();
           } else if (anchor.type === 'element') {
             selection.format = 0;
+            selection.style = '';
           }
         }
       } else {
@@ -329,6 +337,7 @@ function onSelectionChange(
         for (let i = 0; i < nodesLength; i++) {
           const node = nodes[i];
           if ($isTextNode(node)) {
+            // TODO: what about style?
             hasTextNodes = true;
             combinedFormat &= node.getFormat();
             if (combinedFormat === 0) {
@@ -477,6 +486,7 @@ function onBeforeInput(event: InputEvent, editor: LexicalEditor): void {
             const anchorNode = selection.anchor.getNode();
             anchorNode.markDirty();
             selection.format = anchorNode.getFormat();
+            selection.style = anchorNode.getStyle();
           }
         } else {
           event.preventDefault();
@@ -492,13 +502,26 @@ function onBeforeInput(event: InputEvent, editor: LexicalEditor): void {
 
     const data = event.data;
 
+    // This represents the case when two beforeinput events are triggered at the same time (without a
+    // full event loop ending at input). This happens with MacOS with the default keyboard settings,
+    // a combination of autocorrection + autocapitalization.
+    // Having Lexical run everything in controlled mode would fix the issue without additional code
+    // but this would kill the massive performance win from the most common typing event.
+    // Alternatively, when this happens we can prematurely update our EditorState based on the DOM
+    // content, a job that would usually be the input event's responsibility.
+    if (unprocessedBeforeInputData !== null) {
+      $updateSelectedTextFromDOM(false, editor, unprocessedBeforeInputData);
+    }
+
     if (
-      !selection.dirty &&
+      (!selection.dirty || unprocessedBeforeInputData !== null) &&
       selection.isCollapsed() &&
       !$isRootNode(selection.anchor.getNode())
     ) {
       $applyTargetRange(selection, event);
     }
+
+    unprocessedBeforeInputData = null;
 
     const anchor = selection.anchor;
     const focus = selection.focus;
@@ -528,6 +551,8 @@ function onBeforeInput(event: InputEvent, editor: LexicalEditor): void {
       ) {
         event.preventDefault();
         dispatchCommand(editor, CONTROLLED_TEXT_INSERTION_COMMAND, data);
+      } else {
+        unprocessedBeforeInputData = data;
       }
       lastBeforeInputInsertTextTimeStamp = event.timeStamp;
       return;
@@ -721,12 +746,13 @@ function onInput(event: InputEvent, editor: LexicalEditor): void {
       }
 
       // This ensures consistency on Android.
-      if (!IS_SAFARI && !IS_IOS && editor.isComposing()) {
+      if (!IS_SAFARI && !IS_IOS && !IS_APPLE_WEBKIT && editor.isComposing()) {
         lastKeyDownTimeStamp = 0;
         $setCompositionKey(null);
       }
     } else {
-      $updateSelectedTextFromDOM(false, editor);
+      const characterData = data !== null ? data : undefined;
+      $updateSelectedTextFromDOM(false, editor, characterData);
 
       // onInput always fires after onCompositionEnd for FF.
       if (isFirefoxEndingComposition) {
@@ -739,6 +765,7 @@ function onInput(event: InputEvent, editor: LexicalEditor): void {
     // since the change.
     $flushMutations();
   });
+  unprocessedBeforeInputData = null;
 }
 
 function onCompositionStart(
@@ -750,6 +777,7 @@ function onCompositionStart(
 
     if ($isRangeSelection(selection) && !editor.isComposing()) {
       const anchor = selection.anchor;
+      const node = selection.anchor.getNode();
       $setCompositionKey(anchor.key);
 
       if (
@@ -761,7 +789,8 @@ function onCompositionStart(
         // need to invoke the empty space heuristic below.
         anchor.type === 'element' ||
         !selection.isCollapsed() ||
-        selection.anchor.getNode().getFormat() !== selection.format
+        node.getFormat() !== selection.format ||
+        node.getStyle() !== selection.style
       ) {
         // We insert a zero width character, ready for the composition
         // to get inserted into the new node we create. If
@@ -851,6 +880,10 @@ function onKeyDown(event: KeyboardEvent, editor: LexicalEditor): void {
   }
 
   const {keyCode, shiftKey, ctrlKey, metaKey, altKey} = event;
+
+  if (dispatchCommand(editor, KEY_DOWN_COMMAND, event)) {
+    return;
+  }
 
   if (isMoveForward(keyCode, ctrlKey, altKey, metaKey)) {
     dispatchCommand(editor, KEY_ARROW_RIGHT_COMMAND, event);
@@ -1200,9 +1233,10 @@ export function markSelectionChangeFromDOMUpdate(): void {
 
 export function markCollapsedSelectionFormat(
   format: number,
+  style: string,
   offset: number,
   key: NodeKey,
   timeStamp: number,
 ): void {
-  collapsedSelectionFormat = [format, offset, key, timeStamp];
+  collapsedSelectionFormat = [format, style, offset, key, timeStamp];
 }

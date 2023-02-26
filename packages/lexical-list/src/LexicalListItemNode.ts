@@ -24,6 +24,7 @@ import type {
 
 import {
   addClassNamesToElement,
+  isHTMLElement,
   removeClassNamesFromElement,
 } from '@lexical/utils';
 import {
@@ -360,21 +361,15 @@ export class ListItemNode extends ElementNode {
     let currentIndent = this.getIndent();
     while (currentIndent !== indent) {
       if (currentIndent < indent) {
-        $handleIndent([this]);
+        $handleIndent(this);
         currentIndent++;
       } else {
-        $handleOutdent([this]);
+        $handleOutdent(this);
         currentIndent--;
       }
     }
 
     return this;
-  }
-
-  canIndent(): false {
-    // Indent/outdent is handled specifically in the RichText logic.
-
-    return false;
   }
 
   insertBefore(nodeToInsert: LexicalNode): LexicalNode {
@@ -418,6 +413,14 @@ export class ListItemNode extends ElementNode {
       this.isParentOf(focusNode) &&
       this.getTextContent().length === selection.getTextContent().length
     );
+  }
+
+  isParentRequired(): true {
+    return true;
+  }
+
+  createParentElementNode(): ElementNode {
+    return $createListNode('bullet');
   }
 }
 
@@ -519,8 +522,7 @@ function updateListItemChecked(
 
 function convertListItemElement(domNode: Node): DOMConversionOutput {
   const checked =
-    domNode instanceof HTMLElement &&
-    domNode.getAttribute('aria-checked') === 'true';
+    isHTMLElement(domNode) && domNode.getAttribute('aria-checked') === 'true';
   return {node: $createListItemNode(checked)};
 }
 

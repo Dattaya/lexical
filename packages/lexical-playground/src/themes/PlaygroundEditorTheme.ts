@@ -60,6 +60,7 @@ const theme: EditorThemeClasses = {
     h6: 'PlaygroundEditorTheme__h6',
   },
   image: 'PlaygroundEditorTheme__image',
+  indent: 'PlaygroundEditorTheme__indent',
   link: 'PlaygroundEditorTheme__link',
   list: {
     listitem: 'PlaygroundEditorTheme__listItem',

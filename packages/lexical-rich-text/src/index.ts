@@ -86,7 +86,12 @@ import {
   REMOVE_TEXT_COMMAND,
 } from 'lexical';
 import caretFromPoint from 'shared/caretFromPoint';
-import {CAN_USE_BEFORE_INPUT, IS_IOS, IS_SAFARI} from 'shared/environment';
+import {
+  CAN_USE_BEFORE_INPUT,
+  IS_APPLE_WEBKIT,
+  IS_IOS,
+  IS_SAFARI,
+} from 'shared/environment';
 
 export type SerializedHeadingNode = Spread<
   {
@@ -681,7 +686,11 @@ export function registerRichText(editor: LexicalEditor): () => void {
           }
         } else if ($isRangeSelection(selection)) {
           const possibleNode = $getAdjacentNode(selection.focus, true);
-          if ($isDecoratorNode(possibleNode) && !possibleNode.isIsolated()) {
+          if (
+            $isDecoratorNode(possibleNode) &&
+            !possibleNode.isIsolated() &&
+            !possibleNode.isInline()
+          ) {
             possibleNode.selectPrevious();
             event.preventDefault();
             return true;
@@ -717,7 +726,11 @@ export function registerRichText(editor: LexicalEditor): () => void {
             return true;
           }
           const possibleNode = $getAdjacentNode(selection.focus, false);
-          if ($isDecoratorNode(possibleNode) && !possibleNode.isIsolated()) {
+          if (
+            $isDecoratorNode(possibleNode) &&
+            !possibleNode.isIsolated() &&
+            !possibleNode.isInline()
+          ) {
             possibleNode.selectNext();
             event.preventDefault();
             return true;
@@ -842,7 +855,10 @@ export function registerRichText(editor: LexicalEditor): () => void {
           // This can also cause a strange performance issue in
           // Safari, where there is a noticeable pause due to
           // preventing the key down of enter.
-          if ((IS_IOS || IS_SAFARI) && CAN_USE_BEFORE_INPUT) {
+          if (
+            (IS_IOS || IS_SAFARI || IS_APPLE_WEBKIT) &&
+            CAN_USE_BEFORE_INPUT
+          ) {
             return false;
           }
           event.preventDefault();

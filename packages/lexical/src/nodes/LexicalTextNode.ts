@@ -34,6 +34,7 @@ import {
   IS_BOLD,
   IS_CODE,
   IS_DIRECTIONLESS,
+  IS_HIGHLIGHT,
   IS_ITALIC,
   IS_SEGMENTED,
   IS_STRIKETHROUGH,
@@ -83,6 +84,7 @@ export type TextFormatType =
   | 'underline'
   | 'strikethrough'
   | 'italic'
+  | 'highlight'
   | 'code'
   | 'subscript'
   | 'superscript';
@@ -96,6 +98,9 @@ export type TextMarks = Array<TextMark>;
 function getElementOuterTag(node: TextNode, format: number): string | null {
   if (format & IS_CODE) {
     return 'code';
+  }
+  if (format & IS_HIGHLIGHT) {
+    return 'mark';
   }
   if (format & IS_SUBSCRIPT) {
     return 'sub';
@@ -472,6 +477,10 @@ export class TextNode extends LexicalNode {
         conversion: convertTextFormatElement,
         priority: 0,
       }),
+      s: () => ({
+        conversion: convertTextFormatElement,
+        priority: 0,
+      }),
       span: () => ({
         conversion: convertSpanElement,
         priority: 0,
@@ -692,6 +701,10 @@ export class TextNode extends LexicalNode {
 
   canInsertTextAfter(): boolean {
     return true;
+  }
+
+  canContainTabs(): boolean {
+    return false;
   }
 
   splitText(...splitOffsets: Array<number>): Array<TextNode> {
@@ -955,6 +968,7 @@ const nodeNameToTextFormat: Record<string, TextFormatType> = {
   code: 'code',
   em: 'italic',
   i: 'italic',
+  s: 'strikethrough',
   strong: 'bold',
   sub: 'subscript',
   sup: 'superscript',

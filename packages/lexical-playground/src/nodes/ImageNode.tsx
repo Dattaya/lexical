@@ -24,7 +24,7 @@ import {$applyNodeReplacement, createEditor, DecoratorNode} from 'lexical';
 import * as React from 'react';
 import {Suspense} from 'react';
 
-import joinClasses from '../utils/join-classes';
+import joinClasses from '../utils/joinClasses';
 import ImageSpinner from './ImageSpinner';
 
 const ImageComponent = React.lazy(
@@ -46,8 +46,8 @@ export interface ImagePayload {
 
 function convertImageElement(domNode: Node): null | DOMConversionOutput {
   if (domNode instanceof HTMLImageElement) {
-    const {alt: altText, src} = domNode;
-    const node = $createImageNode({altText, src});
+    const {alt: altText, src, width, height} = domNode;
+    const node = $createImageNode({altText, height, src, width});
     return {node};
   }
   return null;
@@ -128,6 +128,8 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     element.className = className;
     element.setAttribute('src', this.__src);
     element.setAttribute('alt', this.__altText);
+    element.setAttribute('width', this.__width.toString());
+    element.setAttribute('height', this.__height.toString());
     return {element};
   }
 

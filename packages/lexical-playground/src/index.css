@@ -39,7 +39,7 @@
   border: 0;
   resize: none;
   cursor: text;
-  display: block;
+  display: flex;
   position: relative;
   outline: 0;
   overflow: auto;
@@ -47,7 +47,7 @@
 }
 
 .editor {
-  height: 100%;
+  flex: auto;
   position: relative;
 }
 
@@ -182,6 +182,12 @@ pre::-webkit-scrollbar-thumb {
   bottom: 20px;
 }
 
+#docs-button {
+  position: fixed;
+  left: 170px;
+  bottom: 20px;
+}
+
 #options-button::after {
   background-image: url(images/icons/gear.svg);
 }
@@ -192,6 +198,10 @@ pre::-webkit-scrollbar-thumb {
 
 #paste-log-button::after {
   background-image: url(images/icons/clipboard.svg);
+}
+
+#docs-button::after {
+  background-image: url(images/icons/file-earmark-text.svg);
 }
 
 #test-recorder-button-snapshot {
@@ -1117,6 +1127,23 @@ i.prettier-error {
 
 .actions i.connect {
   background-image: url(images/icons/plug-fill.svg);
+}
+
+table.disable-selection {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+table.disable-selection span::selection {
+  background-color: transparent;
+}
+
+table.disable-selection br::selection {
+  background-color: transparent;
 }
 
 .table-cell-action-button-container {

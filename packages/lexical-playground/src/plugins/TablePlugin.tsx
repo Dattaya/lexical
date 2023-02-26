@@ -58,8 +58,7 @@ export type CellEditorConfig = Readonly<{
 export const INSERT_NEW_TABLE_COMMAND: LexicalCommand<InsertTableCommandPayload> =
   createCommand('INSERT_NEW_TABLE_COMMAND');
 
-// @ts-ignore: not sure why TS doesn't like using null as the value?
-export const CellContext: React.Context<CellContextShape> = createContext({
+export const CellContext = createContext<CellContextShape>({
   cellEditorConfig: null,
   cellEditorPlugins: null,
   set: () => {
@@ -103,7 +102,11 @@ export function InsertTableDialog({
   const [columns, setColumns] = useState('5');
 
   const onClick = () => {
-    activeEditor.dispatchCommand(INSERT_TABLE_COMMAND, {columns, rows});
+    activeEditor.dispatchCommand(INSERT_TABLE_COMMAND, {
+      columns,
+      rows,
+    });
+
     onClose();
   };
 

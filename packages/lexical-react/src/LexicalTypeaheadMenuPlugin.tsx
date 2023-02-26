@@ -80,15 +80,26 @@ export type MenuRenderFn<TOption extends TypeaheadOption> = (
 
 const scrollIntoViewIfNeeded = (target: HTMLElement) => {
   const container = document.getElementById('typeahead-menu');
-  if (container) {
-    const containerRect = container.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    if (targetRect.bottom > containerRect.bottom) {
-      target.scrollIntoView(false);
-    } else if (targetRect.top < containerRect.top) {
-      target.scrollIntoView();
-    }
+  if (!container) return;
+
+  const typeaheadContainerNode = container.querySelector('.typeahead-popover');
+  if (!typeaheadContainerNode) return;
+
+  const typeaheadRect = typeaheadContainerNode.getBoundingClientRect();
+
+  if (typeaheadRect.top + typeaheadRect.height > window.innerHeight) {
+    typeaheadContainerNode.scrollIntoView({
+      block: 'center',
+    });
   }
+
+  if (typeaheadRect.top < 0) {
+    typeaheadContainerNode.scrollIntoView({
+      block: 'center',
+    });
+  }
+
+  target.scrollIntoView({block: 'nearest'});
 };
 
 function getTextUpToAnchor(selection: RangeSelection): string | null {

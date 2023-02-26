@@ -201,7 +201,20 @@ function isTextNodeUnchanged(
 ): boolean {
   const prevNode = prevEditorState._nodeMap.get(key);
   const nextNode = nextEditorState._nodeMap.get(key);
-  if ($isTextNode(prevNode) && $isTextNode(nextNode)) {
+
+  const prevSelection = prevEditorState._selection;
+  const nextSelection = nextEditorState._selection;
+  let isDeletingLine = false;
+
+  if ($isRangeSelection(prevSelection) && $isRangeSelection(nextSelection)) {
+    isDeletingLine =
+      prevSelection.anchor.type === 'element' &&
+      prevSelection.focus.type === 'element' &&
+      nextSelection.anchor.type === 'text' &&
+      nextSelection.focus.type === 'text';
+  }
+
+  if (!isDeletingLine && $isTextNode(prevNode) && $isTextNode(nextNode)) {
     return (
       prevNode.__type === nextNode.__type &&
       prevNode.__text === nextNode.__text &&
@@ -271,11 +284,10 @@ function createMergeActionGetter(
       }
 
       const selection = nextEditorState._selection;
-      const prevSelection = prevEditorState._selection;
       const hasDirtyNodes = dirtyLeaves.size > 0 || dirtyElements.size > 0;
 
       if (!hasDirtyNodes) {
-        if (prevSelection === null && selection !== null) {
+        if (selection !== null) {
           return HISTORY_MERGE;
         }
 
