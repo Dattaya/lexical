@@ -20,7 +20,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@excalidraw/excalidraw": "0.11.0",
     "@lexical/clipboard": "0.8.1",
     "@lexical/code": "0.8.1",
     "@lexical/file": "0.8.1",
@@ -35,7 +34,6 @@
     "@lexical/selection": "0.8.1",
     "@lexical/table": "0.8.1",
     "@lexical/utils": "0.8.1",
-    "katex": "^0.15.2",
     "lexical": "0.8.1",
     "lodash": "^4.17.21",
     "prettier": "^2.3.2",
